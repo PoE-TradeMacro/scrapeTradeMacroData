@@ -1,0 +1,53 @@
+mods = [
+	"bow" : {
+		"suffix" : [
+			"+# life gained on kill" : [
+				[
+					"name" : "+# life gained on kill",
+					"values" : [min, max],
+					"global" : true
+				]				
+			]
+			"#% increased Light Radius, +(#-#) to Accuracy Rating" : [
+				[
+					"name" : "5% increased Light Radius",
+					"values" : [min, max],
+					"global" : false
+				], 
+				[				
+					"name" : "+(#-#) to Accuracy Rating",
+					"values" : [min, max]
+					"global" : false				
+				]
+			],
+			"#% increased Physical Damage" : [
+				[
+					"name" : "#% increased Physical Damage",
+					"values" : [min, max],
+					"global" : false
+				]
+			],
+			"#% increased Physical Damage, +# to Accuracy Rating" : [
+				[
+					"name" : "#% increased Physical Damage",
+					"values" : [min, max],
+					"global" : false
+				], 
+				[				
+					"name" : "+# to Accuracy Rating",
+					"values" : [min, max]
+					"global" : false				
+				]
+			]
+		],
+		"prefix" : [
+		
+		],
+		"corruption" : [
+		
+		], 
+		"implicit" : [
+		
+		]		
+	}
+]

@@ -1,0 +1,25 @@
+{
+  "name": "scrape_variable_uniques",
+  "version": "1.0.0",
+  "description": "scrape unique items with variable mods from poedb.tw",
+  "main": "getuniques.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eruyome/scrapeVariableUniqueItems.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Eruyome/scrapeVariableUniqueItems/issues"
+  },
+  "homepage": "https://github.com/Eruyome/scrapeVariableUniqueItems#readme",
+  "devDependencies": {
+    "cheerio": "^0.22.0",
+    "json2csv": "^3.7.0",
+    "jsonfile": "^2.4.0",
+    "request": "^2.75.0"
+  }
+}
