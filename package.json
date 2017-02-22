@@ -21,5 +21,8 @@
     "json2csv": "^3.7.0",
     "jsonfile": "^2.4.0",
     "request": "^2.75.0"
+  },
+  "dependencies": {
+    "request-promise": "^4.1.1"
   }
 }
