@@ -3,9 +3,60 @@ var rp 			= require('request-promise');
 var jsonfile 	= require('jsonfile');
 var fs 			= require('fs');
 
+/* wiki item properties:
+* http://pathofexile.gamepedia.com/Special:Browse/Soul_Taker
+* http://pathofexile.gamepedia.com/Special:Browse/Abberath%27s_Hooves
+* */
+var printoutList= [
+	"Is Relic",
+	"Has implicit stat text",
+	"Has explicit stat text",
 
-var url = "https://pathofexile.gamepedia.com/api.php?action=askargs&parameters=limit%3D1000&conditions=Has%20rarity::Unique&printouts=Has%20implicit%20stat%20text|Has%20explicit%20stat%20text&format=json";
+	"Has attack speed range text",
 
+	"Has evasion range maximum",
+	"Has evasion range minimum",
+
+	"Has energy shield range maximum",
+	"Has energy shield range minimum",
+
+	"Has armour range maximum",
+	"Has armour range minimum",
+
+	"Has damage per second range maximum",
+	"Has damage per second range minimum",
+
+	"Has physical damage per second range maximum",
+	"Has physical damage per second range minimum",
+
+	"Has maximum physical damage range maximum",
+	"Has maximum physical damage range minimum",
+
+	"Has minimum physical damage range maximum",
+	"Has minimum physical damage range minimum",
+
+	"Has elemental damage per second range maximum",
+	"Has elemental damage per second range minimum"
+
+	//"Has chaos damage per second range maximum",
+	//"Has chaos damage per second range minimum",
+
+	//"Has cold damage per second range maximum",
+	//"Has cold damage per second range minimum",
+
+	//"Has fire damage per second range maximum",
+	//"Has fire damage per second range minimum",
+
+	//"Has lightning damage per second range maximum",
+	//"Has lightning damage per second range minimum"
+];
+var printouts   = encodeURI(printoutList.join("|"));
+
+var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
+	"&parameters="  + "limit%3D1000" +
+	"&conditions="  + "Has%20rarity::Unique" +
+	"&printouts="   + printouts +
+	"&format="      + "json";
 
 //var regex_hiddenmods = /(<br>)?.*\(Hidden\)(<br>)/i;
 var regex_hiddenmods = /.*\(Hidden\).*/i;
@@ -75,10 +126,18 @@ function scrape() {
 		var tmp = json.query["results"];
 		for (var prop in tmp) {
 			var tmpArr      = get_item_mods(tmp[prop]["printouts"]);
+			var tmpStats    = get_item_stats(tmp[prop]["printouts"]);
 			var tmpItem     = {};
 			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
 			tmpItem.mods    = tmpArr[1];
 			tmpItem.implicit= tmpArr[0];
+			if (tmpStats.length) {
+				tmpItem.Stats = tmpStats;
+			}
+
+			if (tmpItem.name == "Soul Taker") {
+				console.log(tmpItem)
+			}
 
 			var found_index = item_exists(tmpItem.name, items);
 			if (found_index) {
@@ -130,6 +189,88 @@ function add_mods_to_item(mods_existing, mods_new) {
 	});
 
 	return mods_existing
+}
+
+function get_item_stats(list) {
+	var stats   = [];
+	var tmp     = {};
+	var value   = 0;
+
+	/* defense */
+		// evasion
+	value = list["Has evasion range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name = "Evasion Rating";
+		tmp.ranges = [[list["Has evasion range minimum"][0], list["Has evasion range maximum"][0]]];
+		stats.push(tmp);
+	}
+		// energy shield
+	value = list["Has energy shield range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name    = "Energy Shield";
+		tmp.ranges  = [ [list["Has energy shield range minimum"][0], list["Has energy shield range maximum"][0]] ];
+		stats.push(tmp);
+	}
+		// armour
+	value = list["Has armour range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name    = "Armour";
+		tmp.ranges  = [ [list["Has armour range minimum"][0], list["Has armour range maximum"][0]] ];
+		stats.push(tmp);
+	}
+
+	/* offense */
+		// APS
+	value = list["Has attack speed range text"][0];
+	if (typeof value !== "undefined" && value.length) {
+		var match = (list["Has attack speed range text"][0]).match(/([\d.]+) ?to ?([\d.]+)/);
+		if (match) {
+			tmp = {};
+			tmp.name    = "APS";
+			tmp.ranges = [ [ parseFloat(match[1]), parseFloat(match[2]) ] ];
+			stats.push(tmp);
+		}
+	}
+		// physical damage ranges
+	value = list["Has maximum physical damage range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name    = "Damage";
+		tmp.ranges  = [
+			[list["Has minimum physical damage range minimum"][0], list["Has minimum physical damage range maximum"][0]],
+			[list["Has maximum physical damage range minimum"][0], list["Has maximum physical damage range maximum"][0]]
+		];
+		stats.push(tmp);
+	}
+		// DPS
+	value = list["Has damage per second range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name    = "DPS";
+		tmp.ranges  = [ [list["Has damage per second range minimum"][0], list["Has damage per second range maximum"][0]] ];
+		stats.push(tmp);
+	}
+		// physical dps
+	value = list["Has physical damage per second range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name    = "Physical Dps";
+		tmp.ranges  = [ [list["Has physical damage per second range minimum"][0], list["Has physical damage per second range maximum"][0]] ];
+		stats.push(tmp);
+	}
+		// elemental dps
+	value = list["Has elemental damage per second range maximum"][0];
+	if (typeof value !== "undefined" && value) {
+		tmp = {};
+		tmp.name    = "Elemental Dps";
+		tmp.ranges  = [ [list["Has elemental damage per second range minimum"][0], list["Has elemental damage per second range maximum"][0]] ];
+		stats.push(tmp);
+	}
+
+	return stats
 }
 
 function get_item_mods(list) {
