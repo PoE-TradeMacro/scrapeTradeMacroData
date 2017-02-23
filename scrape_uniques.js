@@ -128,15 +128,12 @@ function scrape() {
 			var tmpArr      = get_item_mods(tmp[prop]["printouts"]);
 			var tmpStats    = get_item_stats(tmp[prop]["printouts"]);
 			var tmpItem     = {};
+
 			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
 			tmpItem.mods    = tmpArr[1];
 			tmpItem.implicit= tmpArr[0];
 			if (tmpStats.length) {
 				tmpItem.Stats = tmpStats;
-			}
-
-			if (tmpItem.name == "Soul Taker") {
-				console.log(tmpItem)
 			}
 
 			var found_index = item_exists(tmpItem.name, items);
@@ -194,7 +191,7 @@ function add_mods_to_item(mods_existing, mods_new) {
 function get_item_stats(list) {
 	var stats   = [];
 	var tmp     = {};
-	var value   = 0;
+	var value;
 
 	/* defense */
 		// evasion
@@ -203,7 +200,9 @@ function get_item_stats(list) {
 		tmp = {};
 		tmp.name = "Evasion Rating";
 		tmp.ranges = [[list["Has evasion range minimum"][0], list["Has evasion range maximum"][0]]];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+			stats.push(tmp);
+		}
 	}
 		// energy shield
 	value = list["Has energy shield range maximum"][0];
@@ -211,7 +210,9 @@ function get_item_stats(list) {
 		tmp = {};
 		tmp.name    = "Energy Shield";
 		tmp.ranges  = [ [list["Has energy shield range minimum"][0], list["Has energy shield range maximum"][0]] ];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+			stats.push(tmp);
+		}
 	}
 		// armour
 	value = list["Has armour range maximum"][0];
@@ -219,7 +220,9 @@ function get_item_stats(list) {
 		tmp = {};
 		tmp.name    = "Armour";
 		tmp.ranges  = [ [list["Has armour range minimum"][0], list["Has armour range maximum"][0]] ];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+			stats.push(tmp);
+		}
 	}
 
 	/* offense */
@@ -243,7 +246,9 @@ function get_item_stats(list) {
 			[list["Has minimum physical damage range minimum"][0], list["Has minimum physical damage range maximum"][0]],
 			[list["Has maximum physical damage range minimum"][0], list["Has maximum physical damage range maximum"][0]]
 		];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1] && tmp.ranges[1][0] != tmp.ranges[1][1]) {
+			stats.push(tmp);
+		}
 	}
 		// DPS
 	value = list["Has damage per second range maximum"][0];
@@ -251,7 +256,9 @@ function get_item_stats(list) {
 		tmp = {};
 		tmp.name    = "DPS";
 		tmp.ranges  = [ [list["Has damage per second range minimum"][0], list["Has damage per second range maximum"][0]] ];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+			stats.push(tmp);
+		}
 	}
 		// physical dps
 	value = list["Has physical damage per second range maximum"][0];
@@ -259,7 +266,9 @@ function get_item_stats(list) {
 		tmp = {};
 		tmp.name    = "Physical Dps";
 		tmp.ranges  = [ [list["Has physical damage per second range minimum"][0], list["Has physical damage per second range maximum"][0]] ];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+			stats.push(tmp);
+		}
 	}
 		// elemental dps
 	value = list["Has elemental damage per second range maximum"][0];
@@ -267,7 +276,9 @@ function get_item_stats(list) {
 		tmp = {};
 		tmp.name    = "Elemental Dps";
 		tmp.ranges  = [ [list["Has elemental damage per second range minimum"][0], list["Has elemental damage per second range maximum"][0]] ];
-		stats.push(tmp);
+		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+			stats.push(tmp);
+		}
 	}
 
 	return stats
@@ -282,14 +293,17 @@ function get_item_mods(list) {
 	var t_imp = remove_wiki_formats(list["Has implicit stat text"][0]);
 	if (typeof t_imp !== "undefined") {
 		t_imp = t_imp.split("<br>");
+
 		t_imp.forEach(function(element, index) {
 			var tmp = cleanModString(element);
 			if (typeof tmp !== "undefined" && tmp.length) {
-				imp[index] = mod_to_object(tmp);
+				var t_index = mod_to_object(tmp);
+				if (t_index) {
+					imp.push(t_index);
+				}
 			}
 		});
 
-		imp = imp.join(" ");
 		implicit = imp.length ? imp : {};
 	}
 	
@@ -299,7 +313,10 @@ function get_item_mods(list) {
 	t_mods.forEach(function(element, index) {
 		var tmp = cleanModString(element);
 		if (typeof tmp !== "undefined" && tmp.length) {
-			mods[index] = mod_to_object(tmp);
+			var t_mod = mod_to_object(tmp);
+			if (t_mod) {
+				mods[index] = t_mod;
+			}
 		}
 	});
 
@@ -338,7 +355,7 @@ function mod_to_object(string) {
 	} else  if (match = string.match(regex_single_range)) {
 		// single range
 		mod.name 		= string.replace(regex_single_range_replace, '#');
-		mod.ranges.push( [parseFloat(match[1]), parseFloat(match[2])] );
+		mod.ranges.push( [parseFloat(match[2]), parseFloat(match[3])] );
 		mod.isVariable	= true;
 
 	} else {
