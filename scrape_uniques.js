@@ -128,6 +128,7 @@ function scrape() {
 
 		for (var prop in tmp) {
 			var tmpArr      = get_item_mods(tmp[prop]["printouts"]);
+			var tempImp		= tmpArr[0];
 			var tmpStats    = get_item_stats(tmp[prop]["printouts"]);
 			var isRelicFlag = tmp[prop]["printouts"]["Is Relic"][0];
 			var isRelic     = (typeof isRelicFlag !== "undefined" && (isRelicFlag && isRelicFlag != "false")) ? 1 : 0;
@@ -135,7 +136,9 @@ function scrape() {
 
 			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
 			tmpItem.mods    = tmpArr[1];
-			tmpItem.implicit= tmpArr[0];
+			if (tempImp.length) {
+				tmpItem.implicit = tmpArr[0];	
+			}
 			if (tmpStats.length) {
 				tmpItem.stats = tmpStats;
 			}
@@ -309,7 +312,7 @@ function get_item_mods(list) {
 			}
 		});
 
-		implicit = imp.length ? imp : {};
+		implicit = imp.length ? imp : [];
 	}
 	
 	// split explicit mod block to single mods
@@ -337,6 +340,7 @@ function mod_to_object(string) {
 
 	if (match) {
 		mod.name 		= string.replace(regex_double_range_replace, '# to #');
+		mod.isVariable	= true;
 		// double range
 		if (match[1] && match[2] && match[3] && match[4]) {
 			// (10-20) to (30-40)
@@ -352,10 +356,9 @@ function mod_to_object(string) {
 			mod.ranges.push( [parseFloat(match[3]), parseFloat(match[4])] );
 		} else if (match[1] && match[3]) {
 			// 15 to 35
-			mod.ranges.push( [parseFloat(match[1])] );
-			mod.ranges.push( [parseFloat(match[3])] );
+			mod.ranges.push( parseFloat(match[1]), parseFloat(match[3]) );
+			mod.isVariable = false;
 		}
-		mod.isVariable	= true;
 
 	} else  if (match = string.match(regex_single_range)) {
 		// single range
