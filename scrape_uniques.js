@@ -333,35 +333,47 @@ function get_item_mods(list) {
 
 function mod_to_object(string) {
 	var mod = {};
-	mod.ranges = [];
 
 	mod.name_orig 	= string;
 	var match = string.match(regex_double_range);
 
 	if (match) {
-		mod.name 		= string.replace(regex_double_range_replace, '# to #');
 		mod.isVariable	= true;
 		// double range
 		if (match[1] && match[2] && match[3] && match[4]) {
 			// (10-20) to (30-40)
+			mod.ranges = [];
 			mod.ranges.push( [parseFloat(match[1]), parseFloat(match[2])] );
-			mod.ranges.push( [parseFloat(match[3]), parseFloat(match[4])] );
+			mod.ranges.push( [parseFloat(match[3]), parseFloat(match[4])] );				
+			mod.name = string.replace(regex_double_range_replace, '#');
 		} else if (match[1] && match[2] && match[3]) {			
 			// (10-20) to 35
+			mod.ranges = [];
 			mod.ranges.push( [parseFloat(match[1]), parseFloat(match[2])] );
-			mod.ranges.push( [parseFloat(match[3])] );
+			mod.ranges.push( [parseFloat(match[3])] );			
+			mod.name = string.replace(regex_double_range_replace, '#');
 		} else if (match[1] && match[3] && match[4]) {
-			// 15 to (30-40)
-			mod.ranges.push( [parseFloat(match[1])] );
+			// 15 to (30-40)			
+			mod.ranges = [];
+			// 1 to (x -x) lightning damage
+			if (parseFloat(match[1] != 1)) {
+				mod.ranges.push( [parseFloat(match[1])] );				
+				mod.name = string.replace(regex_double_range_replace, '#');
+			} else {			
+				mod.name = string.replace(regex_double_range_replace, '1 to #');
+			}
 			mod.ranges.push( [parseFloat(match[3]), parseFloat(match[4])] );
 		} else if (match[1] && match[3]) {
 			// 15 to 35
-			mod.ranges.push( parseFloat(match[1]), parseFloat(match[3]) );
+			mod.values = [];
+			mod.values.push( parseFloat(match[1]), parseFloat(match[3]) );
 			mod.isVariable = false;
+			mod.name = string.replace(regex_double_range_replace, '#');
 		}
 
 	} else  if (match = string.match(regex_single_range)) {
 		// single range
+		mod.ranges 		= [];
 		mod.name 		= string.replace(regex_single_range_replace, '#');
 		mod.ranges.push( [parseFloat(match[2]), parseFloat(match[3])] );
 		mod.isVariable	= true;
@@ -371,9 +383,10 @@ function mod_to_object(string) {
 		var regex_single_value = /([\d\.]+)/g;
 
 		mod.name 	= string.replace(regex_single_value, '#');
+		mod.values 	= [];
 		if (match =  string.match(regex_single_value)) {
 			for (var i = 0; i < match.length; i++) {
-				mod.ranges.push( parseFloat(match[i]) );
+				mod.values.push( parseFloat(match[i]) );
 			}
 		}
 		mod.isVariable = false;
