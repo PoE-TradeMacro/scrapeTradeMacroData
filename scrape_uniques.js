@@ -111,7 +111,8 @@ var regex_double_range_replace = /\(?(\d+)(?:-(\d+)\))? to \(?(\d+)(?:-(\d+)\))?
 scrape();
 
 function scrape() {
-	var items = [];
+	// uniques - relics
+	var items = [[],[]];
 
 	var options = {
 		uri: url,		
@@ -124,27 +125,31 @@ function scrape() {
 	rp(options)
 	.then(function (json) {
 		var tmp = json.query["results"];
+
 		for (var prop in tmp) {
 			var tmpArr      = get_item_mods(tmp[prop]["printouts"]);
 			var tmpStats    = get_item_stats(tmp[prop]["printouts"]);
+			var isRelicFlag = tmp[prop]["printouts"]["Is Relic"][0];
+			var isRelic     = (typeof isRelicFlag !== "undefined" && (isRelicFlag && isRelicFlag != "false")) ? 1 : 0;
 			var tmpItem     = {};
 
 			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
 			tmpItem.mods    = tmpArr[1];
 			tmpItem.implicit= tmpArr[0];
 			if (tmpStats.length) {
-				tmpItem.Stats = tmpStats;
+				tmpItem.stats = tmpStats;
 			}
 
-			var found_index = item_exists(tmpItem.name, items);
+			var found_index = item_exists(tmpItem.name, items[isRelic]);
 			if (found_index) {
-				items[found_index].mods = add_mods_to_item(items[found_index].mods, tmpItem.mods);
+				items[isRelic][found_index].mods = add_mods_to_item(items[isRelic][found_index].mods, tmpItem.mods);
 			} else {
-				items.push(tmpItem);
+				items[isRelic].push(tmpItem);
 			}
 		}
 
-		write_data_to_file('uniques', items);
+		write_data_to_file('uniques', items[0]);
+		write_data_to_file('relics', items[1]);
     })
     .catch(function (err) {
         // Crawling failed or Cheerio choked... 
