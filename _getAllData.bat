@@ -1,9 +1,10 @@
 :: scrape unique items
 echo Scraping and combining unique items from wiki.
-node getAllUniquesFromWiki.js
-node combineJSON.js
+::node getAllUniquesFromWiki.js
+::node combineJSON.js
+node scrape_uniques.js
 
-:: scrape unique items
+:: scrape affixes
 echo Scraping and combining affixes.
 node getAffixes.js
 node combineAffixJSON.js
