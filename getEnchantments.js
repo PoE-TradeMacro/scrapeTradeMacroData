@@ -14,22 +14,65 @@ var printoutList = [
 ];
 
 var conditionList = [
-	"Has mod generation type::10",
-	"Has level requirement::75"
+	"Has mod generation type::10"
 ];
 
 var printouts   = encodeURI(printoutList.join("|"));
 var conditions  = encodeURI(conditionList.join("|"));
 
-var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
-	"&parameters="  + "limit%3D2000" +
-	"&conditions="  + conditions +
-	"&printouts="   + printouts +
-	"&format="      + "json";
+var url_boot	= get_url(true, "ConditionalBuffEnchantment");
+var url_helmet	= get_url(true, "SkillEnchantment");
+var url_glove	= get_url(false, "TriggerEnchantment");
+
+scrape(url_boot, "boot");
+scrape(url_helmet, "helmet");
+scrape(url_glove, "glove");
+
+function get_url(level_req, mod_group) {
+	level_req = level_req ? encodeURI("|Has level requirement::75") : "";
+	mod_group = encodeURI("|has mod group::" + mod_group);
+	
+	var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
+		"&parameters="  + "limit%3D2000" +
+		"&conditions="  + conditions + level_req + mod_group +
+		"&printouts="   + printouts +
+		"&format="      + "json";	
+	
+	return url
+}
+
+function scrape(url, group) {
+	// uniques - relics
+	var enchantments	= [];
+
+	var options = {
+		uri: url,
+		headers: {
+			'User-Agent': 'Request-Promise'
+		},
+		json: true
+	};
+
+	rp(options)
+		.then(function (json) {
+			var tmp = json.query["results"];
+
+			for (var prop in tmp) {
+				var stat	= get_enchantment_stat(tmp[prop]["printouts"]["Has stat text"][0]);
+
+				enchantments.push(stat);	
+			}			
+			
+			write_data_to_file(group, enchantments);
+		})
+		.catch(function (err) {
+			// Crawling failed or Cheerio choked...
+			//console.log(err)
+		});
+}
 
 
-scrape();
-
+/*
 function scrape() {
 	// uniques - relics
 	var enchantments	= { "helmet" : [], "boot" : [], "glove" : []};
@@ -51,7 +94,8 @@ function scrape() {
 				var group	= get_enchantment_group(tmp[prop]["printouts"]["Has mod group"][0]);
 
 				enchantments[group].push(stat);	
-			}
+			}		
+			
 			
 			write_data_to_file('boot', enchantments["boot"]);
 			write_data_to_file('helmet', enchantments["helmet"]);
@@ -62,6 +106,7 @@ function scrape() {
 			//console.log(err)
 		});
 }
+*/
 
 function write_data_to_file(file, data) {
 	var file_name = "txt/" + file + '_enchantment_mods.txt';

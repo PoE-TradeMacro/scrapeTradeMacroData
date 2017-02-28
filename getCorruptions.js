@@ -70,7 +70,7 @@ function write_data_to_file(file, data) {
 	
 	var list = "";
 	data.forEach(function(element) {
-		list = list + "\r" + element;
+		list = list + "\n" + element;
 	});
 	
 	fs.writeFile(file_name, list, function(err) {
