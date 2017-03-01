@@ -1,8 +1,5 @@
 
-Adds 1 to # Chaos Damage to Attacks
-Adds # Chaos Damage to Attacks
-Adds # Chaos Damage to Attacks
-Adds 1 to # Chaos Damage to Attacks
+Adds # to # Chaos Damage to Attacks
 #% increased Radius of Area Skills
 Adds an additional Arrow
 Enemies can have # additional Curse
@@ -22,10 +19,6 @@ Enemies Cannot Leech Life From You
 #% chance to Cause Monsters to Flee
 #% increased Chaos Damage per equipped Corrupted Item
 +#% to Chaos Resistance
-+#% to Chaos Resistance
-Grants level # Clarity Skill
-Grants level # Clarity Skill
-Grants level # Clarity Skill
 Grants level # Clarity Skill
 #% of Cold Damage Leeched as Life
 Grants level # Conductivity Skill
@@ -37,8 +30,6 @@ Curse Enemies with level # Vulnerability on Hit
 #% of Physical Damage Converted to Cold Damage
 #% of Physical Damage Converted to Fire Damage
 #% of Physical Damage Converted to Lightning Damage
--# Physical Damage taken from Attacks
--# Physical Damage taken from Attacks
 -# Physical Damage taken from Attacks
 When Hit, #% of Damage is taken from Mana before Life
 #% increased Damage while Dead
@@ -56,14 +47,11 @@ Grants level # Frostbite Skill
 Grants level # Grace Skill
 Grants level # Haste Skill
 Grants level # Hatred Skill
-#% increased Cast Speed
 #% increased Endurance, Frenzy and Power Charge Duration
 #% increased Skill Effect Duration
 #% increased Life Leeched per second per equipped Corrupted Item
 #% of Lightning Damage Leeched as Life
-Adds # Chaos Damage
-Adds # Chaos Damage
-Adds # Chaos Damage
+Adds # to # Chaos Damage
 +# to Weapon range
 #% increased Mana Leeched per second per equipped Corrupted Item
 +# Mana gained for each Enemy hit by your Attacks

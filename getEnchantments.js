@@ -21,9 +21,9 @@ var printouts   = encodeURI(printoutList.join("|"));
 var conditions  = encodeURI(conditionList.join("|"));
 
 var url_boot	= get_url(true, "ConditionalBuffEnchantment");
-var url_helmet	= get_url(true, "SkillEnchantment");
+var url_helmet	= get_url(false, "SkillEnchantment");
 var url_glove	= get_url(false, "TriggerEnchantment");
-
+console.log(url_helmet)
 scrape(url_boot, "boot");
 scrape(url_helmet, "helmet");
 scrape(url_glove, "glove");
@@ -58,9 +58,16 @@ function scrape(url, group) {
 			var tmp = json.query["results"];
 
 			for (var prop in tmp) {
-				var stat	= get_enchantment_stat(tmp[prop]["printouts"]["Has stat text"][0]);
-
-				enchantments.push(stat);	
+				var stat_text = tmp[prop]["printouts"]["Has stat text"][0];
+				
+				if (stat_text) {					
+					var stat	= get_enchantment_stat(tmp[prop]["printouts"]["Has stat text"][0]);	
+					
+					if (enchantments.indexOf(stat) == -1) {  
+						// element found
+						enchantments.push(stat);	
+					}		
+				}
 			}			
 			
 			write_data_to_file(group, enchantments);
@@ -71,43 +78,6 @@ function scrape(url, group) {
 		});
 }
 
-
-/*
-function scrape() {
-	// uniques - relics
-	var enchantments	= { "helmet" : [], "boot" : [], "glove" : []};
-
-	var options = {
-		uri: url,
-		headers: {
-			'User-Agent': 'Request-Promise'
-		},
-		json: true
-	};
-
-	rp(options)
-		.then(function (json) {
-			var tmp = json.query["results"];
-
-			for (var prop in tmp) {
-				var stat	= get_enchantment_stat(tmp[prop]["printouts"]["Has stat text"][0]);
-				var group	= get_enchantment_group(tmp[prop]["printouts"]["Has mod group"][0]);
-
-				enchantments[group].push(stat);	
-			}		
-			
-			
-			write_data_to_file('boot', enchantments["boot"]);
-			write_data_to_file('helmet', enchantments["helmet"]);
-			write_data_to_file('glove', enchantments["glove"]);
-		})
-		.catch(function (err) {
-			// Crawling failed or Cheerio choked...
-			//console.log(err)
-		});
-}
-*/
-
 function write_data_to_file(file, data) {
 	var file_name = "txt/" + file + '_enchantment_mods.txt';
 	try {
@@ -116,7 +86,7 @@ function write_data_to_file(file, data) {
 	
 	var list = "";
 	data.forEach(function(element) {
-		list = list + "\r" + element;
+		list = list + "\n" + element;
 	});
 	
 	fs.writeFile(file_name, list, function(err) {
@@ -156,5 +126,6 @@ function remove_wiki_formats(text) {
 	}
 	text = text.replace('<em class="tc -corrupted">Corrupted</em>', '');
 	text = text.replace('&#60;', '<').replace('&#62;', '>');
+	text = text.replace('<br>', ' ');
 	return text;
 }

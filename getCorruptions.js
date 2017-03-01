@@ -50,7 +50,11 @@ function scrape() {
 
 			for (var prop in tmp) {
 				var stat	= get_corruption_stat(tmp[prop]["printouts"]["Has stat text"][0]);
-				corruptions.push(stat);				
+				
+				if (corruptions.indexOf(stat) == -1) {  
+					// element found
+					corruptions.push(stat);			
+				}					
 			}
 			
 			write_data_to_file('corrupted', corruptions);
@@ -90,21 +94,16 @@ function get_corruption_stat(stat) {
 		// double range
 		if (match[1] && match[2] && match[3] && match[4]) {
 			// (10-20) to (30-40)
-			stat = stat.replace(regex_double_range_replace, '#');
+			stat = stat.replace(regex_double_range_replace, '# to #');
 		} else if (match[1] && match[2] && match[3]) {			
 			// (10-20) to 35
-			stat = stat.replace(regex_double_range_replace, '#');
+			stat = stat.replace(regex_double_range_replace, '# to #');
 		} else if (match[1] && match[3] && match[4]) {
-			// 15 to (30-40)
-			// 1 to (x -x) lightning damage
-			if (parseFloat(match[1] != 1)) {
-				stat = stat.replace(regex_double_range_replace, '#');
-			} else {			
-				stat = stat.replace(regex_double_range_replace, '1 to #');
-			}
+			// 15 to (30-40)			
+			stat = stat.replace(regex_double_range_replace, '# to #');
 		} else if (match[1] && match[3]) {
 			// 15 to 35
-			stat = stat.replace(regex_double_range_replace, '#');
+			stat = stat.replace(regex_double_range_replace, '# to #');
 		}
 
 	} else  if (match = stat.match(regex_single_range)) {
@@ -130,5 +129,6 @@ function remove_wiki_formats(text) {
 	}
 	text = text.replace('<em class="tc -corrupted">Corrupted</em>', '');
 	text = text.replace('&#60;', '<').replace('&#62;', '>');
+	text = text.replace('<br>', ' ');
 	return text;
 }
