@@ -23,7 +23,7 @@ var conditions  = encodeURI(conditionList.join("|"));
 var url_boot	= get_url(true, "ConditionalBuffEnchantment");
 var url_helmet	= get_url(false, "SkillEnchantment");
 var url_glove	= get_url(false, "TriggerEnchantment");
-console.log(url_helmet)
+
 scrape(url_boot, "boot");
 scrape(url_helmet, "helmet");
 scrape(url_glove, "glove");
