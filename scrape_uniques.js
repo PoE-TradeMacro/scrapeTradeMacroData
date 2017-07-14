@@ -11,7 +11,10 @@ var printoutList= [
 	"Is Relic",
 	"Has implicit stat text",
 	"Has explicit stat text",
-
+	
+	"Has attack speed range maximum",
+	"Has attack speed range minimum",
+	"Has base attack speed",
 	"Has attack speed range text",
 
 	"Has evasion range maximum",
@@ -235,16 +238,27 @@ function get_item_stats(list) {
 
 	/* offense */
 		// APS
-	value = list["Has attack speed range text"][0];
-	if (typeof value !== "undefined" && value.length) {
-		var match = (list["Has attack speed range text"][0]).match(/([\d.]+) ?to ?([\d.]+)/);
-		if (match) {
-			tmp = {};
-			tmp.name    = "APS";
-			tmp.ranges = [ [ parseFloat(match[1]), parseFloat(match[2]) ] ];
-			stats.push(tmp);
-		}
-	}
+	minAPS	= typeof list["Has attack speed range minimum"][0] !== "undefined" ? list["Has attack speed range minimum"][0] : 0;	
+	maxAPS	= typeof list["Has attack speed range maximum"][0] !== "undefined" ? list["Has attack speed range maximum"][0] : 0;
+	baseAPS	= typeof list["Has base attack speed"][0] !== "undefined" ? list["Has base attack speed"][0] : 0;
+	if (minAPS > 0 && maxAPS > 0 && (minAPS != baseAPS && maxAPS != baseAPS)) {
+		tmp = {};
+		tmp.name    = "APS";
+		tmp.ranges = [ [ parseFloat(minAPS), parseFloat(maxAPS) ] ];
+		stats.push(tmp);
+	} else {
+		value = list["Has attack speed range text"][0];
+		if (typeof value !== "undefined" && value.length) {
+			var match = (list["Has attack speed range text"][0]).match(/([\d.]+) ?to ?([\d.]+)/);
+			if (match) {
+				tmp = {};
+				tmp.name    = "APS";
+				tmp.ranges = [ [ parseFloat(match[1]), parseFloat(match[2]) ] ];
+				stats.push(tmp);
+			}
+		} 
+	}	
+	
 		// physical damage ranges
 	value = list["Has maximum physical damage range maximum"][0];
 	if (typeof value !== "undefined" && value) {
