@@ -67,7 +67,7 @@ function scrape() {
 }
 
 function write_data_to_file(file, data) {
-	var file_name = "txt/item_" + file + '_mods.txt';
+	var file_name = "output/item_" + file + '_mods.txt';
 	try {
 		fs.unlinkSync(file_name);
 	} catch (err) {}

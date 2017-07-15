@@ -79,7 +79,7 @@ function scrape(url, group) {
 }
 
 function write_data_to_file(file, data) {
-	var file_name = "txt/" + file + '_enchantment_mods.txt';
+	var file_name = "output/" + file + '_enchantment_mods.txt';
 	try {
 		fs.unlinkSync(file_name);
 	} catch (err) {}

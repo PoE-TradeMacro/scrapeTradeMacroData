@@ -12,6 +12,8 @@ var printoutList= [
 	"Has implicit stat text",
 	"Has explicit stat text",
 	
+	"Has base item",
+	
 	"Has attack speed range maximum",
 	"Has attack speed range minimum",
 	"Has base attack speed",
@@ -164,7 +166,7 @@ function scrape() {
 }
 
 function write_data_to_file(file, data) {
-	var file_name = file + '.json';
+	var file_name = 'output/' + file + '.json';
 	try {
 		fs.unlinkSync(file_name);
 	} catch (err) {}
