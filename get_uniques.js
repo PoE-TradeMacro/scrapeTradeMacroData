@@ -140,6 +140,7 @@ function scrape() {
 			var tmpItem     = {};
 
 			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
+
 			tmpItem.mods    = tmpArr[1];
 			if (tempImp.length) {
 				tmpItem.implicit = tmpArr[0];	
@@ -167,6 +168,7 @@ function scrape() {
 
 function write_data_to_file(file, data) {
 	var file_name = 'output/' + file + '.json';
+	console.log(file_name);
 	try {
 		fs.unlinkSync(file_name);
 	} catch (err) {}
@@ -316,7 +318,12 @@ function get_item_mods(list) {
 	// split implicit, parse lines to remove hidden mods and join it again
 	var t_imp = remove_wiki_formats(list["Has implicit stat text"][0]);
 	if (typeof t_imp !== "undefined") {
-		t_imp = t_imp.split("<br>");
+		try {
+			t_imp = t_imp.split("<br>");
+		} catch (err) {
+			console.log(err)
+		}
+		
 
 		t_imp.forEach(function(element, index) {
 			var tmp = cleanModString(element);
@@ -333,17 +340,18 @@ function get_item_mods(list) {
 	
 	// split explicit mod block to single mods
 	var t_mods  = remove_wiki_formats(list["Has explicit stat text"][0]);
-	t_mods  = t_mods.split("<br>").clean("");
-	t_mods.forEach(function(element, index) {
-		var tmp = cleanModString(element);
-		if (typeof tmp !== "undefined" && tmp.length) {
-			var t_mod = mod_to_object(tmp);
-			if (t_mod) {
-				mods[index] = t_mod;
+	if (typeof t_mods !== "undefined") {		
+		t_mods  = t_mods.split("<br>").clean("");
+		t_mods.forEach(function(element, index) {
+			var tmp = cleanModString(element);
+			if (typeof tmp !== "undefined" && tmp.length) {
+				var t_mod = mod_to_object(tmp);
+				if (t_mod) {
+					mods[index] = t_mod;
+				}
 			}
-		}
-	});
-
+		});
+	}
 	return [implicit, mods]
 }
 
