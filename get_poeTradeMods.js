@@ -11,9 +11,10 @@ try {
 var options = {
 	method: 'GET',
 	url: 'http://poe.trade/',
+	gzip: true,
 	
 	headers: {
-		'content-type': 'application/x-www-form-urlencoded',
+		'content-type': 'application/x-www-form-urlencoded; charset=utf-8',
 		'cache-control': 'no-cache'
 	}
 };
@@ -23,7 +24,7 @@ request(options, function (error, response, body) {
 
 	var HTML = response.body;
 	$ = cheerio.load(HTML);
-	
+
 	var select = $('select[name=mod_name]').first();
 	var optgroups = $(select).find('optgroup');
 	var groups = {}
