@@ -2,9 +2,6 @@ var request 	= require("request");
 var rp 			= require('request-promise');
 var jsonfile 	= require('jsonfile');
 var fs 			= require('fs');
-var sleep 		= require('sleep');
-var waitUntil 	= require('wait-until');
-const util 		= require('util');
 
 /* wiki item properties:
 * http://pathofexile.gamepedia.com/Special:Browse/Soul_Taker
@@ -66,262 +63,108 @@ var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
 	"&printouts="   + printouts +
 	"&format="      + "json";
 
+//var regex_hiddenmods = /(<br>)?.*\(Hidden\)(<br>)/i;
+var regex_hiddenmods = /.*\(Hidden\).*/i;
 
-getItemClasses();
+var regex_wikilinks = /\[\[([^\]\|]*)\]\]|\[\[[^\]\|]*\|([^\]\|]*)\]\]/;
+/*
+	matches formats "[[mod]]" or "[[wikipage|mod]] and stores "mod" as capture group 1 or 2, respectively.
+	Since only one capture group is filled each time, using both together in a replacement like r'\1\2' turns
+	both match variants into "mod".
+*/
 
-function getItemClasses() {
-	var classes = [];
-	var count = 0;
-	var urls = [];
-	var results = [];
+var regex_wiki_page_disamb = /([^\(]+) \([^\)]+\)/;
+var regex_wiki_page_disamb_replace = /\s?\(.*\)$/;
+/*
+	matches items named "item name (disambiguation)" and stores "item name" as capture group 1.
+	this format is used in the wiki to distinguish style variants of items, giving each variant its own page.
+	since the style variants ingame all have the same name, we want to filter these out and
+	put in a manually prepared version that covers all styles in one overview. 
+*/
+
+var regex_single_range = /\+?\(((-?[\d\.]+)-([\d\.]+))\)%?/;
+var regex_single_range_replace = /\((-?[\d\.]+-[\d\.]+)\)/;
+/*
+	matches variants of the wiki's "(num-num)" format including the possibly leading "+" and trailing "%", such as:
+	(10-20)
+	+(10-20)
+	(10-20)%
+	(0.6-1)%
+	(0.6-0.8)%
+	(-40-40)%	format found in ventor's gamble's rarity and some "flask charge used" mods
+	+(-25-50)%	ventor's gamble again, now with resistances
 	
-	var url_1 = "https://pathofexile.gamepedia.com/api.php?" +
-		'action=cargoquery' +
-		'&format=json' +
-		'&tables=items' +
-		'&fields=COUNT(DISTINCT items._pageName)=count, class' +
-		'&where=rarity="unique"' +
-		'&having=items.class' +
-		'&formatversion=1';
-	var url_2 = "https://pathofexile.gamepedia.com/api.php?" +
-		'action=cargoquery' +
-		'&format=json' +
-		'&tables=items' +
-		'&fields=class, tags' +
-		'&where=rarity="unique"' +
-		'&having=items.class' +
-		'&formatversion=1';	
+	The "num-num" part inside the brakets is stored as capture group 1
 	
-	urls.push(encodeURI(url_1));
-	urls.push(encodeURI(url_2));
-	
-	console.log(urls);	
-	
-	urls.forEach(function(url_class) {
-		var options_class = {
-			uri: url_class,	
-			headers: {
-				'User-Agent': 'Request-Promise'
-			},
-			json: true
-		};
-		
-		rp(options_class)
-		.then(function (result) {
-			//console.log(util.inspect(result.cargoquery[0].title.class, false, null))
-			results.push(result.cargoquery);
-			count++;
-		})
-		.catch(function (err) {
-			count++;
-			console.log(err)
-		});		
-	});
-		
-	waitUntil()
-	.interval(500)
-	.times(Infinity)
-	.condition(function() {
-		return (urls.length == count ? true : false);
-	})
-	.done(function(result) {
-		
-		var classes = mergeClassResults(results);
-		//console.log(util.inspect(classes, false, null));
-		scrape(classes);
-	});
-}
+	It intentionally leaves the leading "-" of mods like "-(20-10) Physical Damage Taken from Attacks"
+	The initial matching of double range damage mods like "Adds (10-20) to (30-40) Type Damage" is done
+	with another expression.
+*/
 
-function mergeClassResults(results) {
-	var merged = {};
+var regex_double_range = /\(?(\d+)(?:-(\d+)\))? to \(?(\d+)(?:-(\d+)\))?/;
+var regex_double_range_replace = /\(?(\d+)(?:-(\d+)\))? to \(?(\d+)(?:-(\d+)\))?/;
+/*
+	matches the relevant variants for double range damage mods
+	(10-20) to (30-40)
+	15 to (30-40)
+	(10-20) to 35
+	15 to 35
+	Four named capture groups are used: lowmin, lowmax, highmin and highmax (numbers 10, 20, 30 and 40 above)
+	lowmax and/or highmax is None if the part is only a number and not a number range (cases 2-4 above; numbers 15 and 35)
+*/
 
-	results.forEach(function(result) {
-		result.forEach(function(c) {
-			if (!merged.hasOwnProperty(c.title.class)) {
-				merged[c.title.class] = {};
-			}	
-			
-			for (var key in c.title) {
-				if (key != "class") {
-					if (key == "tags") {
-						merged[c.title.class].type = [];
-						if (c.title[key].indexOf("weapon") > 0) {
-							merged[c.title.class].type.push("weapons");
-						}
-						if (c.title[key].indexOf("shield") > 0) {
-							merged[c.title.class].type.push("shields");
-						}			
-						if (c.title[key].indexOf("armour") > 0) {
-							merged[c.title.class].type.push("armours");
-						}			
-					} else {
-						merged[c.title.class][key] = c.title[key];	
-					}
-				}			
-			}
-		});
-	});
+scrape();
 
-	return merged;
-}
-
-function scrape(classes) {
+function scrape() {
 	// uniques - relics
 	var items = [[],[]];
 
-	var uniques = [];
-	var classCount = 0;
-	var requestCount = 0;
+	var options = {
+		uri: url,		
+		headers: {
+			'User-Agent': 'Request-Promise'
+		},
+		json: true
+	};
 	
-	console.log(classes)
-	
-	for (var key in classes) {
-		if (classes[key].type[0] == "weapons") {
-			continue
-		}
-		
-		classCount++;
-		var url_class = "https://pathofexile.gamepedia.com/api.php?" +
-			'action=cargoquery' +
-			'&format=json' +
-			'&limit=500' +
-			'&tables=items' +
-			'&fields=' +
-				'name, base_item, class, explicit_stat_text, implicit_stat_text' +
-			
-				
-				'&where=rarity="unique" AND class="' + key + '"' +
-			//'&having=items.class' +
-			'&having=items._pageName' +
-			//'&group_by=items._pageName' +
-			'&formatversion=1';
-		
-		
-		
-		
-		var url_class = "https://pathofexile.gamepedia.com/api.php?" +
-			'action=cargoquery' +
-			'&format=json' +
-			'&limit=500' +
-			'&tables=items';
-		
-		var isWeapon = classes[key].type.indexOf("weapons") > -1 ? true : false;
-		var isArmour = classes[key].type.indexOf("armours") > -1 ? true : false;
-		var isShield = classes[key].type.indexOf("shields") > -1 ? true : false;
-		
-		if (classes[key].type.length >= 1) {
-			classes[key].type.forEach(function(e) {
-				url_class += ',' + e;
-			});
-		}
-		
-		url_class += '&fields=' +
-				'items.name, items.base_item, items.class, items.explicit_stat_text, items.implicit_stat_text';
-				
-		if (isWeapon) {
-			url_class += ', weapons.attack_speed_range_maximum, weapons.attack_speed_range_minimum, weapons.attack_speed_range_text, ' +
-				'weapons.dps_range_maximum, weapons.dps_range_minimum, ' +
-				'weapons.physical_dps_range_maximum, weapons.physical_dps_range_minimum, ' +
-				'weapons.physical_damage_max_range_maximum, weapons.physical_damage_max_range_minimum, ' +
-				'weapons.physical_damage_min_range_maximum, weapons.physical_damage_min_range_minimum, ' +
-				'weapons.elemental_dps_range_maximum, weapons.elemental_dps_range_minimum';
-				
-				/*
-				weapons.base_attack_speed,
-				
-				*/
-		}
-		
-		if (isArmour) {
-			url_class += ', armours.evasion_range_maximum, armours.evasion_range_minimum, armours.energy_shield_range_maximum, armours.energy_shield_range_minimum, ' +
-				'armours.armour_range_maximum, armours.armour_range_minimum';
-		}
-		
-		if (isShield) {
-			url_class += ', shields.block, shields.block_range_maximum, shields.block_range_minimum';
-		}
-		
-		url_class += '&where=items.rarity="unique" AND items.class="' + key + '"';
-		
-		if (classes[key].type.length >= 1) {
-			url_class += '&join_on=';
-			var i = 0;
-			classes[key].type.forEach(function(e) {
-				if (i > 0) {
-					url_class += ','	
-				}
-				url_class += 'items._pageName=' + e + '._pageName';
-				i++;
-			});
-		}
+	rp(options)
+	.then(function (json) {
+		var tmp = json.query["results"];
 
-		//url_class += '&group_by=items._pageName';
-		url_class += '&having=items._pageName';
-		url_class += '&formatversion=1';
-		
-		url_class = encodeURI(url_class);
-		console.log(url_class)
-		
-		var options_class = {
-			uri: url_class,	
-			headers: {
-				'User-Agent': 'Request-Promise'
-			},
-			json: true
-		};
-		
-		rp(options_class)
-		.then(function (result) {
-			//console.log(util.inspect(result.cargoquery[0].title.class, false, null))
-			uniques.push(result.cargoquery);
-			requestCount++;
-		})
-		.catch(function (err) {
-			requestCount++;
-			console.log(err)
-		});
-	}
-	
-	waitUntil()
-	.interval(500)
-	.times(Infinity)
-	.condition(function() {
-		return (classCount == requestCount ? true : false);
-	})
-	.done(function(result) {
-		// do stuff
-		//console.log(util.inspect(uniques, false, null));
-		uniques = prepareItemObject(uniques);
-		write_data_to_file('uniques', uniques);
-	});
-}
+		for (var prop in tmp) {
+			var tmpArr      = get_item_mods(tmp[prop]["printouts"]);
+			var tempImp		= tmpArr[0];
+			var tmpStats    = get_item_stats(tmp[prop]["printouts"]);
+			var isRelicFlag = tmp[prop]["printouts"]["Is Relic"][0];
+			var isRelic     = (typeof isRelicFlag !== "undefined" && (isRelicFlag && isRelicFlag != "false")) ? 1 : 0;
+			var tmpItem     = {};
 
+			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
 
-function prepareItemObject(result) {
-	var uniques = [];
-
-	result.forEach(function(e) {
-		e.forEach(function(el) {
-			var tmp = {}
-			tmp.properties = {};
-			
-			for (var key in el.title) {
-				if (key == "name") {
-					tmp.name = el.title.name;				
-				} else if (key == "base item") {
-					tmp["base"] = el.title["base item"];				
-				} else {
-					tmp.properties[key] = el.title[key];
-				}
+			tmpItem.mods    = tmpArr[1];
+			if (tempImp.length) {
+				tmpItem.implicit = tmpArr[0];	
 			}
-			
-			uniques.push(tmp);	
-		});		
-	});
-	
-	return uniques
-}
+			if (tmpStats.length) {
+				tmpItem.stats = tmpStats;
+			}
 
+			var found_index = item_exists(tmpItem.name, items[isRelic]);
+			if (found_index) {
+				items[isRelic][found_index].mods = add_mods_to_item(items[isRelic][found_index].mods, tmpItem.mods);
+			} else {
+				items[isRelic].push(tmpItem);
+			}
+		}
+
+		write_data_to_file('uniques', items[0]);
+		write_data_to_file('relics', items[1]);
+    })
+    .catch(function (err) {
+        // Crawling failed or Cheerio choked... 
+        //console.log(err)
+    });	
+}
 
 function write_data_to_file(file, data) {
 	var file_name = 'output/' + file + '.json';

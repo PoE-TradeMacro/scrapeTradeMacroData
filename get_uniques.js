@@ -2,66 +2,9 @@ var request 	= require("request");
 var rp 			= require('request-promise');
 var jsonfile 	= require('jsonfile');
 var fs 			= require('fs');
-
-/* wiki item properties:
-* http://pathofexile.gamepedia.com/Special:Browse/Soul_Taker
-* http://pathofexile.gamepedia.com/Special:Browse/Abberath%27s_Hooves
-* */
-var printoutList= [
-	"Is Relic",
-	"Has implicit stat text",
-	"Has explicit stat text",
-	
-	"Has base item",
-	
-	"Has attack speed range maximum",
-	"Has attack speed range minimum",
-	"Has base attack speed",
-	"Has attack speed range text",
-
-	"Has evasion range maximum",
-	"Has evasion range minimum",
-
-	"Has energy shield range maximum",
-	"Has energy shield range minimum",
-
-	"Has armour range maximum",
-	"Has armour range minimum",
-
-	"Has damage per second range maximum",
-	"Has damage per second range minimum",
-
-	"Has physical damage per second range maximum",
-	"Has physical damage per second range minimum",
-
-	"Has maximum physical damage range maximum",
-	"Has maximum physical damage range minimum",
-
-	"Has minimum physical damage range maximum",
-	"Has minimum physical damage range minimum",
-
-	"Has elemental damage per second range maximum",
-	"Has elemental damage per second range minimum"
-
-	//"Has chaos damage per second range maximum",
-	//"Has chaos damage per second range minimum",
-
-	//"Has cold damage per second range maximum",
-	//"Has cold damage per second range minimum",
-
-	//"Has fire damage per second range maximum",
-	//"Has fire damage per second range minimum",
-
-	//"Has lightning damage per second range maximum",
-	//"Has lightning damage per second range minimum"
-];
-var printouts   = encodeURI(printoutList.join("|"));
-
-var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
-	"&parameters="  + "limit%3D1000" +
-	"&conditions="  + "Has%20rarity::Unique" +
-	"&printouts="   + printouts +
-	"&format="      + "json";
+var sleep 		= require('sleep');
+var waitUntil 	= require('wait-until');
+const util 		= require('util');
 
 //var regex_hiddenmods = /(<br>)?.*\(Hidden\)(<br>)/i;
 var regex_hiddenmods = /.*\(Hidden\).*/i;
@@ -113,57 +56,248 @@ var regex_double_range_replace = /\(?(\d+)(?:-(\d+)\))? to \(?(\d+)(?:-(\d+)\))?
 	lowmax and/or highmax is None if the part is only a number and not a number range (cases 2-4 above; numbers 15 and 35)
 */
 
-scrape();
+getItemClasses();
 
-function scrape() {
+function getItemClasses() {
+	var classes = [];
+	var count = 0;
+	var urls = [];
+	var results = [];
+	
+	var url_1 = "https://pathofexile.gamepedia.com/api.php?" +
+		'action=cargoquery' +
+		'&format=json' +
+		'&tables=items' +
+		'&fields=COUNT(DISTINCT items._pageName)=count, class' +
+		'&where=rarity="unique"' +
+		'&group_by=items.class' +
+		'&formatversion=1';
+	var url_2 = "https://pathofexile.gamepedia.com/api.php?" +
+		'action=cargoquery' +
+		'&format=json' +
+		'&tables=items' +
+		'&fields=class, tags' +
+		'&where=rarity="unique"' +
+		'&group_by=items.class' +
+		'&formatversion=1';
+	
+	urls.push(encodeURI(url_1));
+	urls.push(encodeURI(url_2));
+	
+	//console.log(urls);	
+	
+	urls.forEach(function(url_class) {
+		var options_class = {
+			uri: url_class,	
+			headers: {
+				'User-Agent': 'Request-Promise'
+			},
+			json: true
+		};
+		
+		rp(options_class)
+		.then(function (result) {
+			//console.log(util.inspect(result.cargoquery[0].title.class, false, null))
+			results.push(result.cargoquery);
+			count++;
+		})
+		.catch(function (err) {
+			count++;
+			console.log(err)
+		});		
+	});
+		
+	waitUntil()
+	.interval(500)
+	.times(Infinity)
+	.condition(function() {
+		return (urls.length == count ? true : false);
+	})
+	.done(function(result) {
+		
+		var classes = mergeClassResults(results);
+		//console.log(util.inspect(classes, false, null));
+		scrape(classes);
+	});
+}
+
+function mergeClassResults(results) {
+	var merged = {};
+
+	results.forEach(function(result) {
+		result.forEach(function(c) {
+			if (!merged.hasOwnProperty(c.title.class)) {
+				merged[c.title.class] = {};
+			}	
+			
+			for (var key in c.title) {
+				if (key != "class") {
+					if (key == "tags") {
+						merged[c.title.class].type = [];
+						if (c.title[key].indexOf("weapon") > 0) {
+							merged[c.title.class].type.push("weapons");
+						}
+						if (c.title[key].indexOf("shield") > 0) {
+							merged[c.title.class].type.push("shields");
+						}			
+						if (c.title[key].indexOf("armour") > 0) {
+							merged[c.title.class].type.push("armours");
+						}			
+					} else {
+						merged[c.title.class][key] = c.title[key];	
+					}
+				}			
+			}
+		});
+	});
+
+	return merged;
+}
+
+function scrape(classes) {
 	// uniques - relics
 	var items = [[],[]];
 
-	var options = {
-		uri: url,		
-		headers: {
-			'User-Agent': 'Request-Promise'
-		},
-		json: true
-	};
+	var uniques = [];
+	var classCount = 0;
+	var requestCount = 0;
 	
-	rp(options)
-	.then(function (json) {
-		var tmp = json.query["results"];
-
-		for (var prop in tmp) {
-			var tmpArr      = get_item_mods(tmp[prop]["printouts"]);
-			var tempImp		= tmpArr[0];
-			var tmpStats    = get_item_stats(tmp[prop]["printouts"]);
-			var isRelicFlag = tmp[prop]["printouts"]["Is Relic"][0];
-			var isRelic     = (typeof isRelicFlag !== "undefined" && (isRelicFlag && isRelicFlag != "false")) ? 1 : 0;
-			var tmpItem     = {};
-
-			tmpItem.name    = prop.replace(regex_wiki_page_disamb_replace, '');
-
-			tmpItem.mods    = tmpArr[1];
-			if (tempImp.length) {
-				tmpItem.implicit = tmpArr[0];	
-			}
-			if (tmpStats.length) {
-				tmpItem.stats = tmpStats;
-			}
-
-			var found_index = item_exists(tmpItem.name, items[isRelic]);
-			if (found_index) {
-				items[isRelic][found_index].mods = add_mods_to_item(items[isRelic][found_index].mods, tmpItem.mods);
-			} else {
-				items[isRelic].push(tmpItem);
-			}
+	console.log(classes)
+	
+	for (var key in classes) {		
+		classCount++;
+		resultLimit = 500;
+		
+		var url_class = "https://pathofexile.gamepedia.com/api.php?" +
+			'action=cargoquery' +
+			'&format=json' +
+			'&limit=' + resultLimit +
+			'&tables=items';
+		
+		var isWeapon = classes[key].type.indexOf("weapons") > -1 ? true : false;
+		var isArmour = classes[key].type.indexOf("armours") > -1 ? true : false;
+		var isShield = classes[key].type.indexOf("shields") > -1 ? true : false;
+		
+		if (classes[key].type.length >= 1) {
+			classes[key].type.forEach(function(e) {
+				url_class += ',' + e;
+			});
+		}
+		
+		url_class += '&fields=' +
+				'items.name, items.base_item, items.class, items.explicit_stat_text, items.implicit_stat_text';
+				
+		if (isWeapon) {
+			url_class += ', weapons.attack_speed, weapons.attack_speed_range_maximum, weapons.attack_speed_range_minimum, weapons.attack_speed_range_text, ' +
+				'weapons.dps_range_maximum, weapons.dps_range_minimum, ' +
+				'weapons.physical_dps_range_maximum, weapons.physical_dps_range_minimum, ' +
+				'weapons.physical_damage_max_range_maximum, weapons.physical_damage_max_range_minimum, ' +
+				'weapons.physical_damage_min_range_maximum, weapons.physical_damage_min_range_minimum, ' +
+				'weapons.elemental_dps_range_maximum, weapons.elemental_dps_range_minimum';
+		}
+		
+		if (isArmour) {
+			url_class += ', armours.evasion_range_maximum, armours.evasion_range_minimum, armours.energy_shield_range_maximum, armours.energy_shield_range_minimum, ' +
+				'armours.armour_range_maximum, armours.armour_range_minimum';
+		}
+		
+		if (isShield) {
+			url_class += ', shields.block, shields.block_range_maximum, shields.block_range_minimum';
+		}
+		
+		url_class += '&where=items.rarity="unique" AND items.class="' + key + '"';
+		if (key == "Maps") {
+			url_class += 'AND items.drop_enabled="1"';
+		}
+		
+		if (classes[key].type.length >= 1) {
+			url_class += '&join_on=';
+			var i = 0;
+			classes[key].type.forEach(function(e) {
+				if (i > 0) {
+					url_class += ','	
+				}
+				url_class += 'items._pageName=' + e + '._pageName';
+				i++;
+			});
 		}
 
-		write_data_to_file('uniques', items[0]);
-		write_data_to_file('relics', items[1]);
-    })
-    .catch(function (err) {
-        // Crawling failed or Cheerio choked... 
-        //console.log(err)
-    });	
+		url_class += '&group_by=items._pageName';
+		url_class += '&formatversion=1';
+		
+		url_class = encodeURI(url_class);
+		
+		var options_class = {
+			uri: url_class,	
+			headers: {
+				'User-Agent': 'Request-Promise'
+			},
+			json: true
+		};
+		
+		rp(options_class)
+		.then(function (result) {
+			//console.log(util.inspect(result.cargoquery[0].title.class, false, null))
+			uniques.push(result.cargoquery);
+			requestCount++;
+		})
+		.catch(function (err) {
+			requestCount++;
+			console.log(err)
+		});
+	}
+	
+	waitUntil()
+	.interval(500)
+	.times(Infinity)
+	.condition(function() {
+		return (classCount == requestCount ? true : false);
+	})
+	.done(function(result) {
+		uniques = prepareItemObject(uniques);
+		uniques = get_item_mods(uniques);
+		uniques = get_item_stats(uniques);
+		
+		uniques = mergeVariants(uniques);
+		uniques.sort(compareItemNames);		
+
+		write_data_to_file('uniques', uniques);
+	});
+}
+
+function compareItemNames(a,b) {
+	if (a.name < b.name)
+		return -1;
+	if (a.name > b.name)
+		return 1;
+	return 0;
+}
+
+function prepareItemObject(result) {
+	var uniques = [];
+
+	result.forEach(function(e) {
+		e.forEach(function(el) {
+			var tmp = {}
+			tmp.properties = {};
+			
+			for (var key in el.title) {
+				if (key == "name") {
+					tmp.name = el.title.name;				
+				} else if (key == "base item") {
+					tmp["base"] = el.title["base item"];
+				} else if (key == "class") {
+					tmp["class"] = el.title["class"];					
+				} else {
+					tmp.properties[key] = el.title[key];
+				}
+			}
+			
+			uniques.push(tmp);	
+		});
+	});
+	
+	return uniques
 }
 
 function write_data_to_file(file, data) {
@@ -203,156 +337,206 @@ function add_mods_to_item(mods_existing, mods_new) {
 	return mods_existing
 }
 
-function get_item_stats(list) {
-	var stats   = [];
-	var tmp     = {};
-	var value;
+function mergeVariants(uniques) {
+	//console.log()
+	//console.log("------------------------------")
+	var mergedUniques = [];
 
-	/* defense */
-		// evasion
-	value = list["Has evasion range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name = "Evasion Rating";
-		tmp.ranges = [[list["Has evasion range minimum"][0], list["Has evasion range maximum"][0]]];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
-			stats.push(tmp);
-		}
-	}
-		// energy shield
-	value = list["Has energy shield range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name    = "Energy Shield";
-		tmp.ranges  = [ [list["Has energy shield range minimum"][0], list["Has energy shield range maximum"][0]] ];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
-			stats.push(tmp);
-		}
-	}
-		// armour
-	value = list["Has armour range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name    = "Armour";
-		tmp.ranges  = [ [list["Has armour range minimum"][0], list["Has armour range maximum"][0]] ];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
-			stats.push(tmp);
-		}
-	}
-
-	/* offense */
-		// APS
-	minAPS	= typeof list["Has attack speed range minimum"][0] !== "undefined" ? list["Has attack speed range minimum"][0] : 0;	
-	maxAPS	= typeof list["Has attack speed range maximum"][0] !== "undefined" ? list["Has attack speed range maximum"][0] : 0;
-	baseAPS	= typeof list["Has base attack speed"][0] !== "undefined" ? list["Has base attack speed"][0] : 0;
-	if (minAPS > 0 && maxAPS > 0 && (minAPS != baseAPS && maxAPS != baseAPS)) {
-		tmp = {};
-		tmp.name    = "APS";
-		tmp.ranges = [ [ parseFloat(minAPS), parseFloat(maxAPS) ] ];
-		stats.push(tmp);
-	} else {
-		value = list["Has attack speed range text"][0];
-		if (typeof value !== "undefined" && value.length) {
-			var match = (list["Has attack speed range text"][0]).match(/([\d.]+) ?to ?([\d.]+)/);
-			if (match) {
-				tmp = {};
-				tmp.name    = "APS";
-				tmp.ranges = [ [ parseFloat(match[1]), parseFloat(match[2]) ] ];
-				stats.push(tmp);
-			}
-		} 
-	}	
+	var found;
+	var mod_found;
 	
-		// physical damage ranges
-	value = list["Has maximum physical damage range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name    = "Damage";
-		tmp.ranges  = [
-			[list["Has minimum physical damage range minimum"][0], list["Has minimum physical damage range maximum"][0]],
-			[list["Has maximum physical damage range minimum"][0], list["Has maximum physical damage range maximum"][0]]
-		];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1] && tmp.ranges[1][0] != tmp.ranges[1][1]) {
-			stats.push(tmp);
+	uniques.forEach(function(e) {
+		found = false;
+		mergedUniques.forEach(function(u) {
+			if (e.name == u.name) {				
+				found = true;
+				u.hasVariant = true;
+				
+				e.mods.forEach(function(em) {
+					mod_found = false;					
+					u.mods.forEach(function(um) {
+						if (em.name_orig == um.name_orig) {
+							mod_found = true;
+						}
+					});
+					
+					if (!mod_found) {
+						u.mods.push(em);						
+					}
+				});
+			}
+		});
+		
+		if (!found) {
+			mergedUniques.push(e);
 		}
-	}
-		// DPS
-	value = list["Has damage per second range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name    = "DPS";
-		tmp.ranges  = [ [list["Has damage per second range minimum"][0], list["Has damage per second range maximum"][0]] ];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
-			stats.push(tmp);
-		}
-	}
-		// physical dps
-	value = list["Has physical damage per second range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name    = "Physical Dps";
-		tmp.ranges  = [ [list["Has physical damage per second range minimum"][0], list["Has physical damage per second range maximum"][0]] ];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
-			stats.push(tmp);
-		}
-	}
-		// elemental dps
-	value = list["Has elemental damage per second range maximum"][0];
-	if (typeof value !== "undefined" && value) {
-		tmp = {};
-		tmp.name    = "Elemental Dps";
-		tmp.ranges  = [ [list["Has elemental damage per second range minimum"][0], list["Has elemental damage per second range maximum"][0]] ];
-		if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
-			stats.push(tmp);
-		}
-	}
-
-	return stats
+	});
+	
+	return mergedUniques
 }
 
-function get_item_mods(list) {
-	var mods 		= [];
-	var imp 		= [];
-	var implicit 	= {};
+function get_item_stats(uniques) {
+	uniques.forEach(function(e) {
+		var stats   = [];
+		var tmp     = {};
+		var value;
 
-	// split implicit, parse lines to remove hidden mods and join it again
-	var t_imp = remove_wiki_formats(list["Has implicit stat text"][0]);
-	if (typeof t_imp !== "undefined") {
-		try {
-			t_imp = t_imp.split("<br>");
-		} catch (err) {
-			console.log(err)
+		/* defense */
+			// evasion
+		value = e.properties["evasion range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name = "Evasion Rating";
+			tmp.ranges = [[parseFloat(e.properties["evasion range minimum"]), parseFloat(e.properties["evasion range maximum"])]];
+			if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+				stats.push(tmp);
+			}
 		}
+			// energy shield
+		value = e.properties["energy shield range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name    = "Energy Shield";
+			tmp.ranges  = [ [parseFloat(e.properties["energy shield range minimum"]), parseFloat(e.properties["energy shield range maximum"])] ];
+			if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+				stats.push(tmp);
+			}
+		}
+			// armour
+		value = e.properties["armour range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name    = "Armour";
+			tmp.ranges  = [ [parseFloat(e.properties["armour range minimum"]), parseFloat(e.properties["armour range maximum"])] ];
+			if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+				stats.push(tmp);
+			}
+		}
+
+		/* offense */
+			// APS
+		minAPS	= typeof e.properties["attack speed range minimum"] !== "undefined" ? e.properties["attack speed range minimum"] : 0;	
+		maxAPS	= typeof e.properties["attack speed range maximum"] !== "undefined" ? e.properties["attack speed range maximum"] : 0;
+		baseAPS	= typeof e.properties["attack speed"] !== "undefined" ? e.properties["attack speed"] : 0;
+		//if (minAPS > 0 && maxAPS > 0 && (minAPS != baseAPS && maxAPS != baseAPS)) {
+		if (minAPS > 0 && maxAPS > 0 && (minAPS != maxAPS)) {
+			tmp = {};
+			tmp.name    = "APS";
+			tmp.ranges = [ [ parseFloat(minAPS), parseFloat(maxAPS) ] ];
+			stats.push(tmp);
+		} else {
+			value = e.properties["attack speed range text"];
+			if (typeof value !== "undefined" && value.length) {
+				var match = (e.properties["attack speed range text"]).match(/([\d.]+) ?to ?([\d.]+)/);				
+				tmp = {};
+				tmp.name    = "APS";
+				
+				if (match) {
+					tmp.ranges = [ [ parseFloat(match[1]), parseFloat(match[2]) ] ];					
+					stats.push(tmp);
+				}
+			} 
+		}	
 		
-
-		t_imp.forEach(function(element, index) {
-			var tmp = cleanModString(element);
-			if (typeof tmp !== "undefined" && tmp.length) {
-				var t_index = mod_to_object(tmp);
-				if (t_index) {
-					imp.push(t_index);
-				}
+			// physical damage ranges
+		value = e.properties["physical damage max range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name    = "Damage";
+			tmp.ranges  = [
+				[parseFloat(e.properties["physical damage min range minimum"]), parseFloat(e.properties["physical damage min range maximum"])],
+				[parseFloat(e.properties["physical damage max range minimum"]), parseFloat(e.properties["physical damage max range maximum"])]
+			];			
+			if (tmp.ranges[0][0] != tmp.ranges[0][1] && tmp.ranges[1][0] != tmp.ranges[1][1]) {
+				stats.push(tmp);
 			}
-		});
+		}
+			// DPS
+		value = e.properties["dps range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name    = "DPS";
+			tmp.ranges  = [ [parseFloat(e.properties["dps range minimum"]), parseFloat(e.properties["dps range maximum"])] ];
+			if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+				stats.push(tmp);
+			}
+		}
+			// physical dps
+		value = e.properties["physical dps range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name    = "Physical Dps";
+			tmp.ranges  = [ [parseFloat(e.properties["physical dps range minimum"]), parseFloat(e.properties["physical dps range maximum"])] ];
+			if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+				stats.push(tmp);
+			}
+		}
+			// elemental dps
+		value = e.properties["elemental dps range maximum"];
+		if (typeof value !== "undefined" && value) {
+			tmp = {};
+			tmp.name    = "Elemental Dps";
+			tmp.ranges  = [ [parseFloat(e.properties["elemental dps range minimum"]), parseFloat(e.properties["elemental dps range maximum"])] ];
+			if (tmp.ranges[0][0] != tmp.ranges[0][1]) {
+				stats.push(tmp);
+			}
+		}
 
-		implicit = imp.length ? imp : [];
-	}
+		e.stats = stats;
+		delete e.properties;
+	});
+		
+	return uniques
+}
+
+function get_item_mods(uniques) {
+	uniques.forEach(function(e) {
+		var mods 		= [];
+		var imp 		= [];
+		var implicit 	= {};
+		
+		// split implicit, parse lines to remove hidden mods and join it again
+		var t_imp = remove_wiki_formats(e.properties["implicit stat text"]);
+		if (typeof t_imp !== "undefined") {
+			try {
+				t_imp = t_imp.split("&lt;br&gt;");
+			} catch (err) {
+				console.log(err)
+			}			
+
+			t_imp.forEach(function(element, index) {
+				var tmp = cleanModString(element);
+				if (typeof tmp !== "undefined" && tmp.length) {
+					var t_index = mod_to_object(tmp);
+					if (t_index) {
+						imp.push(t_index);
+					}
+				}
+			});
+
+			implicit = imp.length ? imp : [];
+			e.implicit = implicit;
+		}
+
+		// split explicit mod block to single mods
+		var t_mods  = remove_wiki_formats(e.properties["explicit stat text"]);
+		if (typeof t_mods !== "undefined") {		
+			t_mods  = t_mods.split("&lt;br&gt;").clean("");
+			t_mods.forEach(function(element, index) {
+				var tmp = cleanModString(element);
+				
+				if (typeof tmp !== "undefined" && tmp.length) {
+					var t_mod = mod_to_object(tmp);					
+					if (t_mod) {
+						mods.push(t_mod);
+					}
+				}
+			});
+			e.mods = mods;
+		}
+	});
 	
-	// split explicit mod block to single mods
-	var t_mods  = remove_wiki_formats(list["Has explicit stat text"][0]);
-	if (typeof t_mods !== "undefined") {		
-		t_mods  = t_mods.split("<br>").clean("");
-		t_mods.forEach(function(element, index) {
-			var tmp = cleanModString(element);
-			if (typeof tmp !== "undefined" && tmp.length) {
-				var t_mod = mod_to_object(tmp);
-				if (t_mod) {
-					mods[index] = t_mod;
-				}
-			}
-		});
-	}
-	return [implicit, mods]
+	return uniques
 }
 
 function mod_to_object(string) {
