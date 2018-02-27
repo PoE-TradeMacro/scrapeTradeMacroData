@@ -1,6 +1,10 @@
 var request 	= require("request");
 var rp 			= require('request-promise');
+var jsonfile 	= require('jsonfile');
 var fs 			= require('fs');
+var sleep 		= require('sleep');
+var waitUntil 	= require('wait-until');
+const util 		= require('util');
 
 /* wiki item properties:
  * http://pathofexile.gamepedia.com/Special:Browse/List_of_helmet_enchantment_mods
@@ -8,42 +12,55 @@ var fs 			= require('fs');
 var regex_wikilinks = /\[\[([^\]\|]*)\]\]|\[\[[^\]\|]*\|([^\]\|]*)\]\]/; 
 var regex_single_value = /([\d\.]+)/g; 
 
-var printoutList = [
-	"Has stat text",
-	"Has mod group"
-];
 
-var conditionList = [
-	"Has mod generation type::10"
-];
+getEnchantmentCount();
 
-var printouts   = encodeURI(printoutList.join("|"));
-var conditions  = encodeURI(conditionList.join("|"));
-
-var url_boot	= get_url(true, "ConditionalBuffEnchantment");
-var url_helmet	= get_url(false, "SkillEnchantment");
-var url_glove	= get_url(false, "TriggerEnchantment");
-
-scrape(url_boot, "boot");
-scrape(url_helmet, "helmet");
-scrape(url_glove, "glove");
-
-function get_url(level_req, mod_group) {
-	level_req = level_req ? encodeURI("|Has level requirement::75") : "";
-	mod_group = encodeURI("|has mod group::" + mod_group);
+function getEnchantmentCount() {	
+	var count = 0;
 	
-	var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
-		"&parameters="  + "limit%3D2000" +
-		"&conditions="  + conditions + level_req + mod_group +
-		"&printouts="   + printouts +
-		"&format="      + "json";	
+	var url = "https://pathofexile.gamepedia.com/api.php?" +
+		'action=cargoquery' +
+		'&format=json' +
+		'&limit=500' +
+		'&tables=mods, spawn_weights' +
+		'&fields=COUNT(DISTINCT mods.id)=count' +
+		'&where=mods.generation_type=10 and spawn_weights.tag != "default"' +
+		'&join_on=mods._pageID=spawn_weights._pageID' +
+		'&formatversion=1'
 	
-	return url
+	url = encodeURI(url);
+
+	var options = {
+		uri: url,
+		headers: {
+			'User-Agent': 'Request-Promise'
+		},
+		json: true
+	};
+	
+	rp(options)
+	.then(function (result) {
+		count = result.cargoquery[0].title.count;
+		console.log("Enchantments: " + count);
+		
+		requestEnchantments(count);
+	})
+	.catch(function (err) {
+		console.log(err)
+	});
 }
 
-function scrape(url, group) {
-	// uniques - relics
-	var enchantments	= [];
+function requestEnchantments(count) {
+	var url = "https://pathofexile.gamepedia.com/index.php?title=Special:CargoExport" +
+		'&format=json' +
+		'&limit=' + count + 1 +
+		'&tables=mods, spawn_weights' +
+		'&fields=mods.id, mods.mod_type, mods.stat_text, spawn_weights.tag' +
+		'&where=mods.generation_type=10 and spawn_weights.tag != "default"' +
+		'&join_on=mods._pageID=spawn_weights._pageID'	
+	
+	url = encodeURI(url);
+	//console.log(url)
 
 	var options = {
 		uri: url,
@@ -54,28 +71,40 @@ function scrape(url, group) {
 	};
 
 	rp(options)
-		.then(function (json) {
-			var tmp = json.query["results"];
-
-			for (var prop in tmp) {
-				var stat_text = tmp[prop]["printouts"]["Has stat text"][0];
-				
-				if (stat_text) {					
-					var stat	= get_enchantment_stat(tmp[prop]["printouts"]["Has stat text"][0]);	
-					
-					if (enchantments.indexOf(stat) == -1) {  
-						// element found
-						enchantments.push(stat);	
-					}		
-				}
-			}			
+		.then(function(result) {		
+			var enchants = {};
+			enchants.boots = [];
+			enchants.gloves = [];
+			enchants.helmet = [];
 			
-			write_data_to_file(group, enchantments);
+			result.forEach(function(enchant) {
+				if (enchant["stat text"].length != 0) {
+					var stat_text = formatStat(enchant["stat text"]);
+					
+					if (enchants[enchant.tag].indexOf(stat_text) < 0) {
+						enchants[enchant.tag].push(stat_text);		
+					}					
+				}				
+			});
+			
+			for (type in enchants) {
+				var file = type;
+				if (type == "gloves" || type == "boots") {
+					file = type.slice(0, -1);
+				}
+				write_data_to_file(file, enchants[type]);
+			}
 		})
 		.catch(function (err) {
-			// Crawling failed or Cheerio choked...
-			//console.log(err)
+			console.log(err)
 		});
+}
+
+function formatStat(stat) {
+	stat = remove_wiki_formats(stat);
+	stat = stat.replace(regex_single_value, "#");
+	
+	return stat;
 }
 
 function write_data_to_file(file, data) {
@@ -85,8 +114,12 @@ function write_data_to_file(file, data) {
 	} catch (err) {}
 	
 	var list = "";
+	
 	data.forEach(function(element) {
-		list = list + "\n" + element;
+		if (list.length != 0) {
+			list = list + "\n";		
+		}	
+		list += element;			
 	});
 	
 	fs.writeFile(file_name, list, function(err) {
@@ -94,26 +127,7 @@ function write_data_to_file(file, data) {
 			return console.log(err);
 		}
 		console.log(file_name + " was saved!");
-	}); 
-}
-
-function get_enchantment_stat(stat) {
-	stat = remove_wiki_formats(stat);
-	stat = stat.replace(regex_single_value, "#");
-	
-	return stat;
-}
-
-function get_enchantment_group(group) {
-	if (group == "ConditionalBuffEnchantment") {
-		return "boot"
-	} 
-	else if (group == "TriggerEnchantment") {
-		return "glove"
-	}
-	else if (group == "SkillEnchantment") {
-		return "helmet"
-	}
+	});
 }
 
 function remove_wiki_formats(text) {

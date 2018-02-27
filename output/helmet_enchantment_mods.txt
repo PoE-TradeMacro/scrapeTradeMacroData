@@ -1,4 +1,3 @@
-
 #% increased Abyssal Cry Damage
 #% increased Abyssal Cry Duration
 Ancestral Protector Totem grants #% increased Attack Speed while Active
@@ -33,15 +32,14 @@ Arc has +#% chance to Shock
 #% increased Barrage Attack Speed
 #% increased Barrage Damage
 # additional Barrage Projectile
-# additional Barrage Projectiles
 #% increased Bear Trap Cooldown Recovery Speed
 #% increased Bear Trap Damage
-#% increased Blade Vortex Spell Damage
-#% increased Blade Vortex Duration
-#% increased Blade Vortex Area of Effect
 #% increased Bladefall Critical Strike Chance
 #% increased Bladefall Damage
 #% increased Bladefall Area of Effect
+#% increased Blade Vortex Spell Damage
+#% increased Blade Vortex Duration
+#% increased Blade Vortex Area of Effect
 Blast Rain has a #% chance for an additional blast
 #% increased Blast Rain Damage
 #% increased Blast Rain Area of Effect
@@ -53,6 +51,9 @@ Blink Arrow and Blink Arrow Clones have #% increased Attack Speed
 Blink Arrow and Blink Arrow Clones have #% increased Damage
 Blood Rage grants additional #% increased Attack Speed
 Blood Rage grants additional #% chance to gain a Frenzy Charge on Kill
+#% increased Unearth cast speed
+Unearth Creates Corpses with +# Level
+#% increased Unearth damage
 Bone Offering grants an additional +#% Block Chance
 #% increased Bone Offering Duration
 #% increased Burning Arrow Damage
@@ -68,7 +69,7 @@ Burning Arrow has +#% chance to Ignite
 #% increased Blade Flurry Area of Effect
 #% increased Charged Dash Damage
 #% chance to Dodge Attacks if you have finished Channelling Charged Dash Recently
-#% Area of Effect of Charged Dash's final Damage Area
++# Radius of Charged Dash's final Damage Area
 #% reduced Clarity Mana Reservation
 #% increased Cleave Attack Speed
 #% increased Cleave Damage
@@ -85,6 +86,9 @@ Burning Arrow has +#% chance to Ignite
 Converted Enemies have #% increased Damage
 #% increased Convocation Cooldown Recovery Speed
 #% increased Convocation Buff Effect
+#% increased Corpse Cremation cast speed
+#% increased Corpse Cremation damage
+Cremation can have up to # additional Geyser at a time
 #% increased Cyclone Attack Speed
 #% increased Cyclone Damage
 #% increased Dark Pact Cast Speed
@@ -134,6 +138,9 @@ Elemental Hit has +#% chance to Freeze, Shock and Ignite
 #% increased Explosive Arrow Attack Speed
 #% increased Explosive Arrow Damage
 #% increased Explosive Arrow Area of Effect
+#% increased Fireball Cast Speed
+#% increased Fireball Damage
+Fireball has +#% chance to Ignite
 #% increased Scorching Ray Cast Speed
 #% increased Scorching Ray Damage
 #% increased Scorching Ray beam length
@@ -141,14 +148,14 @@ Elemental Hit has +#% chance to Freeze, Shock and Ignite
 #% increased Fire Nova Mine Damage
 Fire Nova Mine repeats an additional # times
 #% increased Firestorm Damage
+#% increased Firestorm Duration
+#% increased Firestorm explosion Area of Effect
 #% increased Fire Trap Burning Damage
 #% increased Fire Trap Cooldown Recovery Speed
 #% increased Fire Trap Damage
-#% increased Fireball Cast Speed
-#% increased Fireball Damage
-Fireball has +#% chance to Ignite
-#% increased Firestorm Duration
-#% increased Firestorm explosion Area of Effect
+#% increased Flameblast Critical Strike Chance
+#% increased Flameblast Damage
+#% increased Flameblast Area of Effect
 #% increased Flame Dash Cooldown Recovery Speed
 #% increased Flame Dash Damage
 +#% to increased Flame Golem Elemental Resistances
@@ -160,9 +167,6 @@ Fireball has +#% chance to Ignite
 # additional Flame Totem Projectile
 # additional Flame Totem Projectiles
 #% increased Flame Totem Projectile Speed
-#% increased Flameblast Critical Strike Chance
-#% increased Flameblast Damage
-#% increased Flameblast Area of Effect
 #% increased Flammability Curse Effect
 #% increased Flammability Duration
 Flesh Offering grants an additional #% increased Attack Speed
@@ -178,6 +182,8 @@ Freeze Mine causes Enemies to lose an additional #% Cold Resistance while Frozen
 #% increased Frenzy Damage
 #% increased Frenzy Damage per Frenzy Charge
 #% Chance on Frenzy to gain an additional Frenzy Charge
+#% increased Frostbite Curse Effect
+#% increased Frostbite Duration
 #% increased Frost Blades Damage
 #% increased Frost Blades Projectile Speed
 #% increased Frostbolt Cast Speed
@@ -188,10 +194,8 @@ Frostbolt has +#% chance to Freeze
 #% increased Frost Bomb Area of Effect
 #% increased Frost Wall Cooldown Recovery Speed
 #% increased Frost Wall Duration
-#% increased Frostbite Curse Effect
-#% increased Frostbite Duration
 #% increased Glacial Cascade Damage
-#% of Glacial Cascade Physical Damage converted to Cold Damage
+#% of Glacial Cascade Physical Damage Converted to Cold Damage
 #% increased Glacial Cascade Area of Effect
 #% increased Glacial Hammer Damage
 Glacial Hammer has +#% chance to Freeze
@@ -303,7 +307,7 @@ Zombies deal #% increased Damage
 #% increased Reckoning Cooldown Recovery Speed
 #% increased Reckoning Damage
 #% increased Rejuvenation Totem Aura Effect
-#% of Rejuvenation Totem Life Regeneration added as Mana Regeneration
+Gain #% of Rejuvenation Totem Life Regeneration as extra Mana Regeneration
 #% increased Righteous Fire Damage
 #% increased Righteous Fire Area of Effect
 Righteous Fire grants #% increased Spell Damage
@@ -356,6 +360,8 @@ Spirit Offering grants +#% of Physical Damage as Extra Chaos Damage
 #% increased Storm Call Area of Effect
 #% increased Orb of Storms Critical Strike Chance
 #% increased Orb of Storms Area of Effect
+Summon Raging Spirit has #% chance to summon an extra Minion
+#% increased Summon Raging Spirit Duration
 Flame Golems have #% increased Damage
 Ice Golems deal #% increased Damage
 Lightning Golems deal #% increased Damage
@@ -363,8 +369,6 @@ Raging Spirits have #% increased Damage
 Skeletons deal #% increased Damage
 #% chance to Summon an additional Skeleton Warrior with Summon Skeleton
 Stone Golems deal #% increased Damage
-Summon Raging Spirit has #% chance to summon an extra Minion
-#% increased Summon Raging Spirit Duration
 Chaos Golems deal #% increased Damage
 #% increased Sunder Attack Speed
 #% increased Sunder Damage
@@ -388,6 +392,9 @@ Tempest Shield chains an additional # times
 #% increased Viper Strike Damage
 #% increased Viper Strike Duration
 #% reduced Vitality Mana Reservation
+#% increased Volatile Dead cast speed
+#% increased Volatile Dead damage
+Volatile Dead destroys up to # additional Corpses
 #% increased Vortex Damage
 #% increased Vortex Duration
 #% increased Vortex Area of Effect
