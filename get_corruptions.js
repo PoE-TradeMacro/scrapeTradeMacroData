@@ -12,29 +12,20 @@ var regex_double_range_replace = /\(?(\d+)(?:-(\d+)\))? to \(?(\d+)(?:-(\d+)\))?
 var regex_single_range = /\+?\(((-?[\d\.]+)-([\d\.]+))\)%?/;
 var regex_single_range_replace = /\((-?[\d\.]+-[\d\.]+)\)/;
 
-var printoutList = [
-	"Has stat text"
-];
+requestCorruptions()
 
-var conditionList = [
-	"Has mod generation type::5"
-];
-
-var printouts   = encodeURI(printoutList.join("|"));
-var conditions  = encodeURI(conditionList.join("|"));
-
-var url = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
-	"&parameters="  + "limit%3D2000" +
-	"&conditions="  + conditions +
-	"&printouts="   + printouts +
-	"&format="      + "json";
-
-
-scrape();
-
-function scrape() {
-	// uniques - relics
-	var corruptions = [];
+function requestCorruptions() {	
+	var url = "https://pathofexile.gamepedia.com/api.php?" +
+		'action=cargoquery' +
+		'&format=json' +
+		'&limit=max' +
+		'&tables=mods' +
+		'&fields=mods.id, mods.stat_text' +
+		'&where=mods.generation_type=5' +
+		'&formatversion=1';
+		
+	url = encodeURI(url);
+	//console.log(url)
 
 	var options = {
 		uri: url,
@@ -45,24 +36,23 @@ function scrape() {
 	};
 
 	rp(options)
-		.then(function (json) {
-			var tmp = json.query["results"];
-
-			for (var prop in tmp) {
-				var stat	= get_corruption_stat(tmp[prop]["printouts"]["Has stat text"][0]);
-				
-				if (corruptions.indexOf(stat) == -1) {  
-					// element found
-					corruptions.push(stat);			
-				}					
-			}
+		.then(function(result) {
+			var corruptions = [];
 			
-			write_data_to_file('corrupted', corruptions);
+			result.cargoquery.forEach(function(corruption) {
+				if (corruption.title["stat text"].length != 0) {
+					var stat_text = get_corruption_stat(corruption.title["stat text"]);
+					
+					if (corruptions.indexOf(stat_text) < 0) {
+						corruptions.push(stat_text);		
+					}					
+				}				
+			});
 			
+			write_data_to_file("corrupted", corruptions);
 		})
 		.catch(function (err) {
-			// Crawling failed or Cheerio choked...
-			//console.log(err)
+			console.log(err)
 		});
 }
 
@@ -74,7 +64,10 @@ function write_data_to_file(file, data) {
 	
 	var list = "";
 	data.forEach(function(element) {
-		list = list + "\n" + element;
+		if (list.length != 0) {
+			list = list + "\n";		
+		}	
+		list += element;			
 	});
 	
 	fs.writeFile(file_name, list, function(err) {
