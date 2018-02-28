@@ -2,49 +2,14 @@ var request 	= require("request");
 var rp 			= require('request-promise');
 var jsonfile 	= require('jsonfile');
 var fs 			= require('fs');
+var sleep 		= require('sleep');
+var waitUntil 	= require('wait-until');
+const util 		= require('util');
 
 /* wiki item properties:
 * http://pathofexile.gamepedia.com/Special:Browse/Soul_Taker
 * http://pathofexile.gamepedia.com/Special:Browse/Abberath%27s_Hooves
 * */
-var printoutList= [
-	"Has name",
-	
-	"Has base armour",
-	"Has base energy shield",
-	"Has base evasion",
-
-	"Has base dexterity requirement",
-	"Has base intelligence requirement",
-	"Has base strength requirement",
-
-	"Has base level requirement",
-
-	"Has item class",
-	
-	"Has base attack speed",
-	"Has base critical strike chance",
-	"Has base maximum physical damage",
-	"Has base minimum physical damage",
-	"Has base weapon range",
-
-	"Has drop level"
-];
-var printouts   = encodeURI(printoutList.join("|"));
-
-var tags = ["armour", "weapon"]
-var urls = [];
-urls[0] = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
-	"&parameters="  + "limit%3D1000" +
-	"&conditions="  + "Has%20rarity::Normal|Has%20tags::" + tags[0] +
-	"&printouts="   + printouts +
-	"&format="      + "json";
-
-urls[1] = "https://pathofexile.gamepedia.com/api.php?action=askargs" +
-	"&parameters="  + "limit%3D1000" +
-	"&conditions="  + "Has%20rarity::Normal|Has%20tags::" + tags[1] +
-	"&printouts="   + printouts +
-	"&format="      + "json";	
 
 //var regex_hiddenmods = /(<br>)?.*\(Hidden\)(<br>)/i;
 var regex_hiddenmods = /.*\(Hidden\).*/i;
@@ -96,44 +61,63 @@ var regex_double_range_replace = /\(?(\d+)(?:-(\d+)\))? to \(?(\d+)(?:-(\d+)\))?
 	lowmax and/or highmax is None if the part is only a number and not a number range (cases 2-4 above; numbers 15 and 35)
 */
 
-var classes = [];
 
-scrape();
+getItemBases();
 
-function scrape() {	
-	urls.forEach(function(element, index) {
-		var items	= {};
-		classes		= [];
-		var options = {
-			uri: urls[index],		
-			headers: {
-				'User-Agent': 'Request-Promise'
-			},
-			json: true
-		};
+function getItemBases() {	
+	var url = "https://pathofexile.gamepedia.com/index.php?title=Special:CargoExport" +
+		'&format=json' +
+		'&limit=4000' +
+		'&tables=items, armours, weapons, shields' +
+		'&fields=items.name, items.class, weapons.range, weapons.physical_damage_min, weapons.physical_damage_max, ' +
+			'weapons.attack_speed, weapons.critical_strike_chance, armours.armour, armours.energy_shield,' + 
+			'armours.evasion, shields.block, items.required_strength, items.required_intelligence, ' + 
+			'items.required_dexterity, items.required_level, items.drop_level, items._pageName = item_name, ' + 
+			'armours._pageName = armour_name, weapons._pageName = weapon_name, shields._pageName = shield_name' +
+		'&where=(armours._pageName <> "" or weapons._pageName <> "") and items.rarity="Normal"' +
+		'&join_on=items._pageName=armours._pageName, items._pageName=weapons._pageName, items._pageName=shields._pageName'
+	
+	url = encodeURI(url);
+	//console.log(url)
+	
+	var options = {
+		uri: url,	
+		headers: {
+			'User-Agent': 'Request-Promise'
+		},
+		json: true
+	};
+	
+	rp(options)
+	.then(function (result) {
+		var bases = {};
+		bases.weapons = {};
+		bases.armours = {};
 		
-		rp(options)
-		.then(function (json) {
-			var tmp = json.query["results"];
-			for (var item in tmp) {
-				var name	= tmp[item]["fulltext"];
-				var props	= get_item_props(tmp[item]["printouts"]);
-				collectClasses(props["Item Class"]);				
-				items[name] = props;
+		result.forEach(function(base) {
+			var tmp = get_item_stats(base);
+			
+			var re = /(Armours|Shields|Gloves|Boots|Helmets|Body Armours)/i;
+			var isArmour = base.class.match(re);
+			if (isArmour) {
+				bases.armours[base.name] = tmp;	
+			} else {
+				bases.weapons[base.name] = tmp;	
 			}
-			//console.log(classes);
-			write_data_to_file('item_bases_' + tags[index], items);			
-		})
-		.catch(function (err) {
-			//console.log(err)
-		});	
-	})		
-}
-
-function collectClasses(itemClass) {
-	if (classes.indexOf(itemClass) == -1) {
-		classes.push(itemClass);
-	}
+		});
+		
+		for (base in bases) {
+			var file = base;
+			if (base == "weapons" || base == "armours") {
+				file = base.slice(0, -1);
+			}
+			write_data_to_file('item_bases_' + file, bases[base]);
+		};	
+	})
+	.catch(function (err) {
+		console.log(err)
+	});	
+	
 }
 
 function write_data_to_file(file, data) {
@@ -154,35 +138,50 @@ function write_data_to_file(file, data) {
 	})
 }
 
-function get_item_props(list) {
+function get_item_stats(list) {
 	var stats   = {};
 	var tmp     = {};
 	var value;
-
+	
+	/* sub type/class */
+	value = list["class"];
+	if (typeof value !== "undefined" && value) {
+		if (value > 0 || value.length) {
+			stats["Item Class"] = value;	
+		}		
+	}
+	
 	/* defense */
 		// evasion
-	value = list["Has base evasion"][0];
+	value = list["evasion"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Evasion Rating"] = value;	
 		}		
 	}	
 		// energy shield
-	value = list["Has base energy shield"][0];
+	value = list["energy shield"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Energy Shield"] = value;	
 		}
 	}
 		// armour
-	value = list["Has base armour"][0];
+	value = list["armour"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Armour"] = value;	
 		}
 	}
-	
-	value = list["Has item class"][0];
+		// block
+	value = list["block"];
+	if (typeof value !== "undefined" && value) {
+		if (value > 0 || value.length) {
+			stats["Block"] = value;	
+		}
+	}
+		// class
+	value = list["item class"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {			
 			stats["Item Class"] = value.replace(/Thrusting\s?/, '');	
@@ -191,28 +190,28 @@ function get_item_props(list) {
 	
 	/* requirements */
 		// dexterity
-	value = list["Has base dexterity requirement"][0];
+	value = list["required dexterity"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Dexterity"] = value;	
 		}
 	}
 		// intelligence
-	value = list["Has base intelligence requirement"][0];
+	value = list["required intelligence"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Intelligence"] = value;	
 		}
 	}
 		// strength
-	value = list["Has base strength requirement"][0];
+	value = list["required strength"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Strength"] = value;	
 		}
 	}
 		// level
-	value = list["Has base level requirement"][0];
+	value = list["required level"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Level"] = value;	
@@ -221,35 +220,35 @@ function get_item_props(list) {
 
 	/* offense */
 		// attack speed
-	value = list["Has base attack speed"][0];
+	value = list["attack speed"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Attack Speed"] = value;	
 		}
 	}
 		// crit chance
-	value = list["Has base critical strike chance"][0];
+	value = list["critical strike chance"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Critical Strike Chance"] = value;	
 		}
 	}
 		// min phys dmg
-	value = list["Has base minimum physical damage"][0];
+	value = list["physical damage min"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Minimum Physical Damage"] = value;	
 		}
 	}
 		// max phys dmg
-	value = list["Has base maximum physical damage"][0];
+	value = list["physical damage max"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Maximum Physical Damage"] = value;	
 		}
 	}
 		// weapon range
-	value = list["Has base weapon range"][0];
+	value = list["range"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Weapon Range"] = value;	
@@ -258,7 +257,7 @@ function get_item_props(list) {
 	
 	/* others */
 		// drop level
-	value = list["Has drop level"][0];
+	value = list["drop level"];
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Drop Level"] = value;	
