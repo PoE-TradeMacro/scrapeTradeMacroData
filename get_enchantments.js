@@ -60,7 +60,7 @@ function requestEnchantments(count) {
 		'&join_on=mods._pageID=spawn_weights._pageID'	
 	
 	url = encodeURI(url);
-	//console.log(url)
+	console.log(url)
 
 	var options = {
 		uri: url,
@@ -141,5 +141,6 @@ function remove_wiki_formats(text) {
 	text = text.replace('<em class="tc -corrupted">Corrupted</em>', '');
 	text = text.replace('&#60;', '<').replace('&#62;', '>');
 	text = text.replace('<br>', ' ');
+	text = text.replace('&lt;br&gt;', ' ');
 	return text;
 }

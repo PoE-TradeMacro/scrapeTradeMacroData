@@ -233,7 +233,7 @@ function scrape(classes) {
 				'User-Agent': 'Request-Promise'
 			},
 			json: true
-		};
+		};		
 		
 		rp(options_class)
 		.then(function (result) {
