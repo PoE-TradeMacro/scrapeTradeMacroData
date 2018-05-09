@@ -32,16 +32,39 @@ request(options, function (error, response, body) {
 		
 		var rows = $(table).find('tr');
 		var currencies = {}
+		currencies.default = {}
+		currencies.special = {}
 		
-		rows.each(function(index, el) {			
-			cells = $(el).find('td');
+		rows.each(function(index, el) {		
 			var currency = [];
-			cells.each(function(i, e) {
+			var hasImage = false;
+			var hasCurrencyLink = false;
+			
+			cells = $(el).find('td');
+			cells.each(function(i, e) {				
 				currency[i] = $(e).text();
+				if(i = 1) {
+					var image = $(e).find("img").attr("src");
+					if (typeof image !== "undefined") {
+						hasImage = true;						
+						if (image.match(/currency\/[^\s]+/i)) {
+							hasCurrencyLink = true;
+						}
+					}					
+				}
 			});
 			
-			if (typeof currency[0] !== undefined) {		
-				currencies[currency[0]] = currency[1];	
+			if (typeof currency[0] !== "undefined") {
+				arr = currency[1].split(",");
+				reg = /-map|-?essence|-leaguestone|-net/i;
+				
+				if(currency[1].match(reg) || hasCurrencyLink === false) {
+					currencies.special[currency[0].trim()] = arr;
+				} 
+				else {
+					currencies.default[currency[0].trim()] = arr;	
+				}
+				
 			}			
 		});
 
