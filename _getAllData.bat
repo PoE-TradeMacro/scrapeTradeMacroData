@@ -15,6 +15,10 @@ node get_bases.js
 echo Scraping poe.trade mods.
 node get_poeTradeMods.js
 
+:: scrape poe.trade currency tags
+echo Scraping poe.trade currency tags.
+node get_poeTradeCurrencyTags.js
+
 :: scrape corrupted mods.
 echo Scraping corrupted mods.
 node get_corruptions.js
