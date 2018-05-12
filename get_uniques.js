@@ -624,8 +624,10 @@ function remove_wiki_formats(text) {
 		text = text.replace(regex_wikilinks, '$1$2');
 	}
 	text = text.replace('<em class="tc -corrupted">Corrupted</em>', '');
+	text = text.replace('&lt;em class=&quot;tc -corrupted&quot;&gt;Corrupted&lt;/em&gt;', '');	
 	text = text.replace('<br/>', '');
-	text = text.replace('&#60;', '<').replace('&#62;', '>');	
+	text = text.replace('&#60;', '<').replace('&#62;', '>');
+	text = text.replace('&lt;br /&gt;', '`n');
 	return text;
 }
 
