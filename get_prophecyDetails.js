@@ -122,8 +122,8 @@ function remove_wiki_formats(text) {
 	text = text.replace('&#60;', '<').replace('&#62;', '>');
 	text = text.replace('&lt;br /&gt;', '`n');
 	
-	text = replaceAll(text, "\n", "`n");
-	text = replaceAll(text, "; ", "`n");
+	//text = replaceAll(text, "\n", "`n");
+	text = replaceAll(text, "; ", "\n");
 	
 	return text;
 }
@@ -149,7 +149,7 @@ function remove_wiki_item_preview_formatting(text) {
 		var item_name = $(el).find('.header').html();
 		if (item_name != null) {
 			item_name = item_name.replace(/(.*)(<br>|<\/br>)(.*)/g, '$1 ($3)').trim();
-			$(el).replaceWith(item_name);	
+			$(el).replaceWith("\"" + item_name + "\"");	
 		}		
 	});	
 	
