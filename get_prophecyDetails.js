@@ -122,7 +122,18 @@ function remove_wiki_formats(text) {
 	text = text.replace('&#60;', '<').replace('&#62;', '>');
 	text = text.replace('&lt;br /&gt;', '`n');
 	
+	text = replaceAll(text, "\n", "`n");
+	text = replaceAll(text, "; ", "`n");
+	
 	return text;
+}
+
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+}
+
+function escapeRegExp(str) {
+    return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
 }
 
 function remove_wiki_item_preview_formatting(text) {
