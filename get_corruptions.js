@@ -25,7 +25,7 @@ function requestCorruptions() {
 		'&formatversion=1';
 		
 	url = encodeURI(url);
-	//console.log(url)
+	console.log(url)
 
 	var options = {
 		uri: url,

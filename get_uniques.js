@@ -599,7 +599,9 @@ function mod_to_object(string) {
 		}
 		mod.isVariable = false;
 	}
-
+	
+	mod.name = remove_wiki_formats(mod.name);
+	mod.name_orig = remove_wiki_formats(mod.name_orig);
 	/*
 	console.log("name_orig  :", mod.name_orig);
 	console.log("name       :", mod.name);
@@ -626,8 +628,15 @@ function remove_wiki_formats(text) {
 	text = text.replace('<em class="tc -corrupted">Corrupted</em>', '');
 	text = text.replace('&lt;em class=&quot;tc -corrupted&quot;&gt;Corrupted&lt;/em&gt;', '');	
 	text = text.replace('<br/>', '');
+	
 	text = text.replace('&#60;', '<').replace('&#62;', '>');
-	text = text.replace('&lt;br /&gt;', '`n');
+	text = text.replace('&amp;#60;', '<').replace('&amp;#62;', '>');
+	text = text.replace(/^&amp;##;/, '<');
+	text = text.replace(/&amp;##;$/, '>');
+	text = text.replace(/(<.*)&amp;##;/, '$1>');
+	
+	text = text.replace('&lt;br /&gt;', '`n');	
+	
 	return text;
 }
 
