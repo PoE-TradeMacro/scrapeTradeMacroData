@@ -60,7 +60,7 @@ function requestEnchantments(count) {
 		'&join_on=mods._pageID=spawn_weights._pageID'	
 	
 	url = encodeURI(url);
-	console.log(url)
+	//console.log(url)
 
 	var options = {
 		uri: url,

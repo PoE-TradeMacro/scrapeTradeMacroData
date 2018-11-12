@@ -69,7 +69,7 @@ function getItemBases() {
 		'&format=json' +
 		'&limit=4000' +
 		'&tables=items, armours, weapons, shields' +
-		'&fields=items.name, items.class, weapons.weapon_range, weapons.physical_damage_min, weapons.physical_damage_max, ' +
+		'&fields=items.name, items.class, items.size_x, items.size_y, weapons.weapon_range, weapons.physical_damage_min, weapons.physical_damage_max, ' +
 			'weapons.attack_speed, weapons.critical_strike_chance, armours.armour, armours.energy_shield,' + 
 			'armours.evasion, shields.block, items.required_strength, items.required_intelligence, ' + 
 			'items.required_dexterity, items.required_level, items.drop_level, items._pageName = item_name, ' + 
@@ -261,6 +261,20 @@ function get_item_stats(list) {
 	if (typeof value !== "undefined" && value) {
 		if (value > 0 || value.length) {
 			stats["Drop Level"] = value;	
+		}
+	}
+		// width
+	value = list["size x"];
+	if (typeof value !== "undefined" && value) {
+		if (value > 0 || value.length) {
+			stats["Width"] = value;	
+		}
+	}	
+		// height
+	value = list["size y"];
+	if (typeof value !== "undefined" && value) {
+		if (value > 0 || value.length) {
+			stats["Height"] = value;	
 		}
 	}
 	
