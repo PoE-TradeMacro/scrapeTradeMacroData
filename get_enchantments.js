@@ -41,7 +41,7 @@ function getEnchantmentCount() {
 	rp(options)
 	.then(function (result) {
 		count = result.cargoquery[0].title.count;
-		console.log("Enchantments: " + count);
+		//console.log("Enchantments: " + count);
 		
 		requestEnchantments(count);
 	})

@@ -68,16 +68,18 @@ function getItemBases() {
 	var url = "https://pathofexile.gamepedia.com/index.php?title=Special:CargoExport" +
 		'&format=json' +
 		'&limit=4000' +
-		'&tables=items, flasks, amulets' +
-		'&fields=items.name, items.class, ' +
-			'items.required_strength, items.required_intelligence, items.required_dexterity, items.required_level, items.drop_level, items._pageName = item_name, ' + 
-			'flasks._pageName = flask_name, amulets._pageName = amulet_name' +
-		'&where=(flasks._pageName <> "" or amulets._pageName <> "") and items.rarity="Normal"' +
-		'&join_on=items._pageName=flasks._pageName, items._pageName=amulets._pageName';
+		'&tables=items, armours, weapons, shields' +
+		'&fields=items.name, items.class, weapons.weapon_range, weapons.physical_damage_min, weapons.physical_damage_max, ' +
+			'weapons.attack_speed, weapons.critical_strike_chance, armours.armour, armours.energy_shield,' + 
+			'armours.evasion, shields.block, items.required_strength, items.required_intelligence, ' + 
+			'items.required_dexterity, items.required_level, items.drop_level, items._pageName = item_name, ' + 
+			'armours._pageName = armour_name, weapons._pageName = weapon_name, shields._pageName = shield_name' +
+		'&where=(armours._pageName <> "" or weapons._pageName <> "") and items.rarity="Normal"' +
+		'&join_on=items._pageName=armours._pageName, items._pageName=weapons._pageName, items._pageName=shields._pageName'
 	
 	url = encodeURI(url);
 	//console.log(url)
-	
+
 	var options = {
 		uri: url,	
 		headers: {
@@ -89,13 +91,28 @@ function getItemBases() {
 	rp(options)
 	.then(function (result) {
 		var bases = {};
+		bases.weapons = {};
+		bases.armours = {};
 		
 		result.forEach(function(base) {
 			var tmp = get_item_stats(base);
-			bases[base.name] = tmp;
+			
+			var re = /(Armours|Shields|Gloves|Boots|Helmets|Body Armours)/i;
+			var isArmour = base.class.match(re);
+			if (isArmour) {
+				bases.armours[base.name] = tmp;	
+			} else {
+				bases.weapons[base.name] = tmp;	
+			}
 		});
 		
-		write_data_to_file('item_bases', bases);
+		for (base in bases) {
+			var file = base;
+			if (base == "weapons" || base == "armours") {
+				file = base.slice(0, -1);
+			}
+			write_data_to_file('item_bases_' + file, bases[base]);
+		};	
 	})
 	.catch(function (err) {
 		console.log(err)

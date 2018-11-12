@@ -6,6 +6,10 @@ node get_uniques.js
 echo Scraping item bases from wiki.
 node get_bases.js
 
+:: scrape item bases (armour/weapon)
+echo Scraping item bases (armour/weapon) from wiki.
+node get_bases_weapon_armour.js
+
 :: scrape affixes
 :: echo Scraping and combining affixes.
 ::node getAffixes.js

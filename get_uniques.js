@@ -162,7 +162,7 @@ function scrape(classes) {
 	var classCount = 0;
 	var requestCount = 0;
 	
-	console.log(classes)
+	//console.log(classes)
 	
 	for (var key in classes) {		
 		classCount++;
