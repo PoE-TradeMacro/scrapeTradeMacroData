@@ -347,6 +347,7 @@ function mergeVariants(uniques) {
 	
 	uniques.forEach(function(e) {
 		found = false;
+		
 		mergedUniques.forEach(function(u) {
 			if (e.name == u.name) {				
 				found = true;
@@ -490,7 +491,7 @@ function get_item_stats(uniques) {
 }
 
 function get_item_mods(uniques) {
-	uniques.forEach(function(e) {		
+	uniques.forEach(function(e) {	
 		var mods 		= [];
 		var imp 		= [];
 		var implicit 	= {};
@@ -520,12 +521,13 @@ function get_item_mods(uniques) {
 
 		// remove table formattings in case the mod description is a table (list), example: Watcher's Eye
 		var regex_find_mod_table = /table.*?class.*?=/;
-		var regex_table_formatting_beginning_remove = /.*?;td(&gt;)?/;
+		var regex_table_formatting_beginning_remove = /(.*?)&lt;table.*?;td(&gt;)?/;
 		var regex_table_formatting_end_remove = /(.*)(&lt;\/td.*?)$/;
 
 		var match = e.properties["explicit stat text"].match(regex_find_mod_table);
 		if (match) {
-			e.properties["explicit stat text"] = e.properties["explicit stat text"].replace(regex_table_formatting_beginning_remove, '');
+			e.hasVariant = true;	// having a mod table means having variants
+			e.properties["explicit stat text"] = e.properties["explicit stat text"].replace(regex_table_formatting_beginning_remove, '$1');
 			e.properties["explicit stat text"] = e.properties["explicit stat text"].replace(regex_table_formatting_end_remove, '$1');
 		}
 		
