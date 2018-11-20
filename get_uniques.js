@@ -293,7 +293,7 @@ function prepareItemObject(result) {
 				}
 			}
 			
-			uniques.push(tmp);	
+			uniques.push(tmp);
 		});
 	});
 	
@@ -490,7 +490,7 @@ function get_item_stats(uniques) {
 }
 
 function get_item_mods(uniques) {
-	uniques.forEach(function(e) {
+	uniques.forEach(function(e) {		
 		var mods 		= [];
 		var imp 		= [];
 		var implicit 	= {};
@@ -518,13 +518,23 @@ function get_item_mods(uniques) {
 			e.implicit = implicit;
 		}
 
+		// remove table formattings in case the mod description is a table (list), example: Watcher's Eye
+		var regex_find_mod_table = /table.*?class.*?=/;
+		var regex_table_formatting_beginning_remove = /.*?;td(&gt;)?/;
+		var regex_table_formatting_end_remove = /(.*)(&lt;\/td.*?)$/;
+
+		var match = e.properties["explicit stat text"].match(regex_find_mod_table);
+		if (match) {
+			e.properties["explicit stat text"] = e.properties["explicit stat text"].replace(regex_table_formatting_beginning_remove, '');
+			e.properties["explicit stat text"] = e.properties["explicit stat text"].replace(regex_table_formatting_end_remove, '$1');
+		}
+		
 		// split explicit mod block to single mods
 		var t_mods  = remove_wiki_formats(e.properties["explicit stat text"]);
-		if (typeof t_mods !== "undefined") {		
-			t_mods  = t_mods.split("&lt;br&gt;").clean("");
+		if (typeof t_mods !== "undefined") {
+			t_mods  = t_mods.split(/&lt;.*?&gt;/).clean("");
 			t_mods.forEach(function(element, index) {
 				var tmp = cleanModString(element);
-				
 				if (typeof tmp !== "undefined" && tmp.length) {
 					var t_mod = mod_to_object(tmp);					
 					if (t_mod) {
