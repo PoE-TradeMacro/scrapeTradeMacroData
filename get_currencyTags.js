@@ -26,23 +26,29 @@ request(options, function (error, response, body) {
 	var tags = JSON.parse(response.body);
 	var cTags = {};
 	cTags.tags = tags.result;	
-	
+
 	for (var type in cTags.tags) {
-		for (var e in cTags.tags[type]) {
-			delete cTags.tags[type][e].image;
+		for (var e in cTags.tags[type]) {			
+			try {
+				delete cTags.tags[type][e].image;	
+			} catch (e) {}
 			
-			var reg_whiteSextant = /Apprentice Cartographer's Sextant/i;
-			var reg_yellowSextant = /Journeyman Cartographer's Sextant/i;
-			var reg_redSextant = /Master Cartographer's Sextant/i;
 			
-			var text = cTags.tags[type][e].text;
+			var reg_whiteSextant = /Simple Sextant/i;
+			var reg_yellowSextant = /Prime Sextant/i;
+			var reg_redSextant = /Awakened Sextant/i;			
 			
-			if (text.match(reg_whiteSextant)) {
-				cTags.tags[type][e].short = "Apprentice Sextant (white)";
-			} else if (text.match(reg_yellowSextant)) {
-				cTags.tags[type][e].short = "Journeyman Sextant (yellow)";
-			} else if (text.match(reg_redSextant)) {
-				cTags.tags[type][e].short = "Master Sextant (red)";
+			try {
+				var text = cTags.tags[type][e].text;
+				if (text.match(reg_whiteSextant)) {
+					cTags.tags[type][e].short = "Simple Sextant (white)";
+				} else if (text.match(reg_yellowSextant)) {
+					cTags.tags[type][e].short = "Prime Sextant (yellow)";
+				} else if (text.match(reg_redSextant)) {
+					cTags.tags[type][e].short = "Awakened Sextant (red)";
+				}
+			} catch (e) {
+				//console.log(util.inspect(cTags.tags[type][e], {depth: null}));
 			}
 		}
 	}	

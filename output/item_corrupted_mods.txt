@@ -1,7 +1,7 @@
 Adds # to # Chaos Damage to Attacks
 #% increased Area of Effect
 Bow Attacks fire an additional Arrow
-Enemies can have # additional Curse
+You can apply an additional Curse
 Arrows Pierce an additional Target
 Can have up to # additional Trap placed at a time
 Grants Level # Anger Skill
@@ -14,10 +14,10 @@ Enemies Cannot Leech Life From you
 #% increased Cast Speed
 #% chance to Avoid being Frozen
 #% chance to Avoid being Ignited
-#% additional Chance to receive a Critical Strike
+Hits have #% increased Critical Strike Chance against you
 #% chance to Dodge Attack Hits
 #% chance to Cause Monsters to Flee
-#% increased Chaos Damage for each Equipped Corrupted Item
+#% increased Chaos Damage for each Corrupted Item Equipped
 +#% to Chaos Resistance
 Grants Level # Clarity Skill
 #% of Cold Damage Leeched as Life
@@ -30,7 +30,7 @@ Curse Enemies with Level # Vulnerability on Hit
 #% of Physical Damage Converted to Cold Damage
 #% of Physical Damage Converted to Fire Damage
 #% of Physical Damage Converted to Lightning Damage
--# Physical Damage taken from Attacks
+-# Physical Damage taken from Attack Hits
 #% of Damage is taken from Mana before Life
 #% increased Damage while Dead
 Grants Level # Determination Skill
@@ -49,11 +49,11 @@ Grants Level # Haste Skill
 Grants Level # Hatred Skill
 #% increased Endurance, Frenzy and Power Charge Duration
 #% increased Skill Effect Duration
-#% increased Life Leeched per second for each Equipped Corrupted Item
+#% increased total Recovery per second from Life Leech for each Corrupted Item Equipped
 #% of Lightning Damage Leeched as Life
 Adds # to # Chaos Damage
 +# to Weapon range
-#% increased Mana Leeched per second for each Equipped Corrupted Item
+#% increased total Recovery per second from Mana Leech for each Corrupted Item Equipped
 +# Mana gained for each Enemy hit by your Attacks
 #% of Damage taken gained as Mana over 4 seconds when Hit
 +# to Maximum Frenzy Charges
@@ -133,7 +133,10 @@ Determination has #% increased Aura Effect
 Discipline has #% increased Aura Effect
 Grace has #% increased Aura Effect
 Hatred has #% increased Aura Effect
+Malevolence has #% increased Aura Effect
+Pride has #% increased Aura Effect
 Wrath has #% increased Aura Effect
+Zealotry has #% increased Aura Effect
 #% increased Burning Damage
 #% increased Cast Speed during any Flask Effect
 #% increased Effect of Chill
@@ -146,7 +149,7 @@ Wrath has #% increased Aura Effect
 #% increased Global Physical Damage
 #% increased Intelligence (4-6)% increased Dexterity
 #% increased maximum Life
-#% of Life Regenerated per second
+Regenerate #% of Life per second
 #% increased Movement Speed during any Flask Effect
 Projectiles deal #% increased Damage for each time they have Chained
 Projectiles deal #% increased Damage for each Enemy Pierced
@@ -167,6 +170,7 @@ Adds # to # Physical Damage
 #% increased Critical Strike Chance
 #% increased Physical Damage
 You cannot be Maimed
+Grants Level # Malevolence Skill
 +#% to maximum Chance to Block Attack Damage
 Gain #% of Physical Damage as Extra Cold Damage
 Gain #% of Physical Damage as Extra Fire Damage
@@ -176,6 +180,7 @@ Gain #% of Physical Damage as Extra Lightning Damage
 #% of Physical Damage from Hits taken as Fire Damage
 #% of Physical Damage from Hits taken as Lightning Damage
 Point Blank
+Grants Level # Pride Skill
 #% reduced Chaos Damage taken
 #% reduced Cold Damage taken
 #% reduced Area Damage taken from Hits
@@ -184,7 +189,7 @@ You take #% reduced Extra Damage from Critical Strikes
 #% reduced Fire Damage taken
 #% reduced Lightning Damage taken
 #% reduced Mana Reserved
-# Life Regenerated per second while moving
+Regenerate # Life per second while moving
 Resolute Technique
 +# to Level of Socketed AoE Gems
 +# to Level of Socketed Aura Gems
@@ -199,10 +204,11 @@ Socketed Gems are supported by Level # Faster Projectiles
 Socketed Gems are Supported by Level # Fortify
 Socketed Gems are Supported by Level # Life Gain On Hit
 Socketed Gems are Supported by Level # Onslaught
-Socketed Gems are Supported by Level # Reduced Mana
+Socketed Gems are Supported by Level # Inspiration
 #% chance to gain Unholy Might for 3 seconds on Kill
 #% increased Elemental Damage with Attack Skills
 Grants Level # Wrath Skill
-#% increased Vaal Skill Damage
+Grants Level # Zealotry Skill
+Vaal Skills deal #% increased Damage
 Grants Level # Vitality Skill
 Grants Level # Vulnerability Skill

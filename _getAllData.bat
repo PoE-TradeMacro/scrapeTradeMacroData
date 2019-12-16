@@ -34,3 +34,5 @@ node get_enchantments.js
 :: scrape prophecy details.
 echo Prophecy details.
 node get_prophecyDetails.js
+
+pause
