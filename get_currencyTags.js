@@ -23,39 +23,29 @@ var options = {
 request(options, function (error, response, body) {
 	if (error) throw new Error(error);
 	
-	var tags = JSON.parse(response.body);
-	var cTags = {};
-	cTags.tags = tags.result;	
-
-	for (var type in cTags.tags) {
-		for (var e in cTags.tags[type]) {			
-			try {
-				delete cTags.tags[type][e].image;	
-			} catch (e) {}
-			
-			
-			var reg_whiteSextant = /Simple Sextant/i;
-			var reg_yellowSextant = /Prime Sextant/i;
-			var reg_redSextant = /Awakened Sextant/i;			
-			
-			try {
-				var text = cTags.tags[type][e].text;
-				if (text.match(reg_whiteSextant)) {
-					cTags.tags[type][e].short = "Simple Sextant (white)";
-				} else if (text.match(reg_yellowSextant)) {
-					cTags.tags[type][e].short = "Prime Sextant (yellow)";
-				} else if (text.match(reg_redSextant)) {
-					cTags.tags[type][e].short = "Awakened Sextant (red)";
-				}
-			} catch (e) {
-				//console.log(util.inspect(cTags.tags[type][e], {depth: null}));
-			}
-		}
-	}	
-	//console.log(util.inspect(cTags, false, null));
+	var res = JSON.parse(response.body);
+	staticData = res.result;
 	
+	var currencyTags = {}
+	currencyTags.tags = {}
+
+	for (let category in staticData) {
+		let categoryId = staticData[category].id
+		if (staticData.hasOwnProperty(category)) {
+			//console.log(`${category} : ${staticData[category].entries}`)
+			for (let entry in staticData[category].entries) {			
+				//console.log(util.inspect(staticData[category].entries[entry], {depth: null}));
+				try {
+					delete staticData[category].entries[entry].image;
+				} catch (e) {}
+			}
+
+			currencyTags.tags[categoryId] = staticData[category].entries;
+		}
+	}
+
 	var file = 'output/currency_tags.json'
-	jsonfile.writeFile(file, cTags, function(err) {
+	jsonfile.writeFile(file, currencyTags, function(err) {
 		if(err) {
 			console.error(err)	
 		}
