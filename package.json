@@ -24,7 +24,7 @@
     "unescape": "^1.0.1"
   },
   "dependencies": {
-    "async": "^2.6.0",
+    "async": "^2.6.4",
     "npm": "^6.4.0",
     "request-promise": "^4.1.1",
     "rimraf": "^2.6.2",
